@@ -7,6 +7,7 @@ import (
 
 	"github.com/YASSERRMD/Ventiqra/backend/internal/config"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/logger"
+	"github.com/YASSERRMD/Ventiqra/backend/internal/server"
 )
 
 func main() {
@@ -24,10 +25,6 @@ func run() error {
 
 	log := logger.New(cfg.Log.Level, cfg.Log.Format)
 
-	log.Info("ventiqra-api starting",
-		"env", cfg.Env,
-		"port", cfg.HTTP.Port,
-		"log_level", cfg.Log.Level,
-	)
-	return nil
+	srv := server.New(cfg, log)
+	return srv.ListenAndServe()
 }
