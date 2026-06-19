@@ -58,12 +58,18 @@ func TestSimStateInitAndGet(t *testing.T) {
 		t.Fatalf("create company: %v", err)
 	}
 
-	state, err := repo.Init(ctx, c.ID, 4242, 1_000_00)
+	state, err := repo.Init(ctx, c.ID, 4242, 1_000_00, 500_000)
 	if err != nil {
 		t.Fatalf("Init: %v", err)
 	}
 	if state.CompanyID != c.ID || state.Day != 0 || state.Seed != 4242 || state.Cash != 1_000_00 {
 		t.Errorf("unexpected state: %+v", state)
+	}
+	if state.Revenue != 0 {
+		t.Errorf("Revenue = %d, want 0 on init", state.Revenue)
+	}
+	if state.MonthlyBurn != 500_000 {
+		t.Errorf("MonthlyBurn = %d, want 500000", state.MonthlyBurn)
 	}
 
 	got, err := repo.Get(ctx, c.ID)
@@ -72,6 +78,9 @@ func TestSimStateInitAndGet(t *testing.T) {
 	}
 	if got.Seed != 4242 {
 		t.Errorf("seed = %d, want 4242", got.Seed)
+	}
+	if got.Revenue != 0 || got.MonthlyBurn != 500_000 {
+		t.Errorf("Get metrics = rev:%d burn:%d, want rev:0 burn:500000", got.Revenue, got.MonthlyBurn)
 	}
 }
 
@@ -85,16 +94,16 @@ func TestSimStateInitIsIdempotent(t *testing.T) {
 		t.Fatalf("create company: %v", err)
 	}
 
-	first, err := repo.Init(ctx, c.ID, 100, 500)
+	first, err := repo.Init(ctx, c.ID, 100, 500, 250_000)
 	if err != nil {
 		t.Fatalf("first Init: %v", err)
 	}
 	// A second init with different args must not overwrite the existing row.
-	second, err := repo.Init(ctx, c.ID, 999, 9999)
+	second, err := repo.Init(ctx, c.ID, 999, 9999, 999_999)
 	if err != nil {
 		t.Fatalf("second Init: %v", err)
 	}
-	if second.Seed != first.Seed || second.Cash != first.Cash {
+	if second.Seed != first.Seed || second.Cash != first.Cash || second.MonthlyBurn != first.MonthlyBurn {
 		t.Errorf("Init not idempotent: first=%+v second=%+v", first, second)
 	}
 }
@@ -108,11 +117,11 @@ func TestSimStateSave(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create company: %v", err)
 	}
-	if _, err := repo.Init(ctx, c.ID, 7, 200); err != nil {
+	if _, err := repo.Init(ctx, c.ID, 7, 200, 300_000); err != nil {
 		t.Fatalf("Init: %v", err)
 	}
 
-	if err := repo.Save(ctx, c.ID, 3, 12_34_56); err != nil {
+	if err := repo.Save(ctx, c.ID, 3, 12_34_56, 1_00, 450_000); err != nil {
 		t.Fatalf("Save: %v", err)
 	}
 	got, err := repo.Get(ctx, c.ID)
@@ -122,11 +131,14 @@ func TestSimStateSave(t *testing.T) {
 	if got.Day != 3 || got.Cash != 12_34_56 {
 		t.Errorf("after save: day=%d cash=%d, want day=3 cash=123456", got.Day, got.Cash)
 	}
+	if got.Revenue != 1_00 || got.MonthlyBurn != 450_000 {
+		t.Errorf("after save: revenue=%d burn=%d, want revenue=100 burn=450000", got.Revenue, got.MonthlyBurn)
+	}
 }
 
 func TestSimStateSaveMissingIsNotFound(t *testing.T) {
 	repo, _, _ := simStateRepoForTest(t)
-	err := repo.Save(context.Background(), "00000000-0000-0000-0000-000000000000", 1, 1)
+	err := repo.Save(context.Background(), "00000000-0000-0000-0000-000000000000", 1, 1, 0, 0)
 	if !errors.Is(err, ErrNotFound) {
 		t.Errorf("expected ErrNotFound, got %v", err)
 	}
@@ -141,7 +153,7 @@ func TestSimStateCascadesWithCompanyDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create company: %v", err)
 	}
-	if _, err := repo.Init(ctx, c.ID, 1, 0); err != nil {
+	if _, err := repo.Init(ctx, c.ID, 1, 0, 0); err != nil {
 		t.Fatalf("Init: %v", err)
 	}
 
