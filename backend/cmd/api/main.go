@@ -4,6 +4,8 @@ package main
 import (
 	"fmt"
 	"os"
+
+	"github.com/YASSERRMD/Ventiqra/backend/internal/config"
 )
 
 func main() {
@@ -14,6 +16,11 @@ func main() {
 }
 
 func run() error {
-	fmt.Println("ventiqra-api starting")
+	cfg, err := config.Load(".env")
+	if err != nil {
+		return fmt.Errorf("load config: %w", err)
+	}
+
+	fmt.Printf("ventiqra-api starting (env=%s, port=%s)\n", cfg.Env, cfg.HTTP.Port)
 	return nil
 }
