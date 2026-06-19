@@ -64,8 +64,12 @@ func run() error {
 	if tm, err := auth.NewTokenManager(cfg.JWT.Secret, cfg.JWT.AccessTTL); err != nil {
 		log.Warn("auth disabled: JWT secret not configured", "error", err)
 	} else {
-		opts = append(opts, server.WithAuth(repository.NewUserRepo(repository.New(pool)), tm))
-		log.Info("auth enabled")
+		baseRepo := repository.New(pool)
+		opts = append(opts,
+			server.WithAuth(repository.NewUserRepo(baseRepo), tm),
+			server.WithCompany(repository.NewCompanyRepo(baseRepo)),
+		)
+		log.Info("auth and company services enabled")
 	}
 
 	srv := server.New(cfg, log, opts...)
