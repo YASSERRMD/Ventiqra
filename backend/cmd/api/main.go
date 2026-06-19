@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/YASSERRMD/Ventiqra/backend/internal/config"
+	"github.com/YASSERRMD/Ventiqra/backend/internal/db"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/logger"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/server"
 )
@@ -33,11 +34,30 @@ func run() error {
 
 	log := logger.New(cfg.Log.Level, cfg.Log.Format)
 
+	// Connect to PostgreSQL and apply migrations.
+	connectCtx, cancelConnect := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancelConnect()
+
+	pool, err := db.Connect(connectCtx, cfg.DSN(), db.DefaultPoolConfig())
+	if err != nil {
+		return fmt.Errorf("database: %w", err)
+	}
+	defer db.Close(pool)
+	log.Info("database connected")
+
+	migrateCtx, cancelMigrate := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancelMigrate()
+	if n, err := db.Migrate(migrateCtx, pool); err != nil {
+		return fmt.Errorf("migrate: %w", err)
+	} else if n > 0 {
+		log.Info("migrations applied", "count", n)
+	}
+
 	// Stop on interrupt or termination signals.
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	srv := server.New(cfg, log)
+	srv := server.New(cfg, log, server.WithDB(pool))
 
 	// Serve until the server stops on its own.
 	serveErr := make(chan error, 1)
