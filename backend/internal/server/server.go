@@ -12,6 +12,7 @@ import (
 	"log/slog"
 
 	"github.com/YASSERRMD/Ventiqra/backend/internal/config"
+	"github.com/YASSERRMD/Ventiqra/backend/internal/middleware"
 )
 
 // Server is the Ventiqra HTTP API server.
@@ -31,8 +32,14 @@ func New(cfg config.Config, log *slog.Logger) *Server {
 	}
 	s.registerRoutes()
 	s.server = &http.Server{
-		Addr:              s.cfg.HTTP.Host + ":" + s.cfg.HTTP.Port,
-		Handler:           s.mux,
+		Addr: s.cfg.HTTP.Host + ":" + s.cfg.HTTP.Port,
+		Handler: middleware.Chain(
+			s.mux,
+			middleware.Recover(log),
+			middleware.RequestID,
+			middleware.Logger(log),
+			middleware.CORS(cfg.CORSOrigins),
+		),
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       30 * time.Second,
 		WriteTimeout:      30 * time.Second,
