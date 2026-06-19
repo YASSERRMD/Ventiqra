@@ -16,10 +16,12 @@ import (
 	"github.com/YASSERRMD/Ventiqra/backend/internal/config"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/db"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/repository"
+	"github.com/YASSERRMD/Ventiqra/backend/internal/testutil"
 )
 
 func newAuthTestServer(t *testing.T) *Server {
 	t.Helper()
+	t.Cleanup(testutil.LockDB())
 	dsn := os.Getenv("DATABASE_TEST_URL")
 	if dsn == "" {
 		dsn = "postgres://ventiqra:changeme@localhost:5432/ventiqra?sslmode=disable"
@@ -48,6 +50,7 @@ func newAuthTestServer(t *testing.T) *Server {
 		WithDB(pool),
 		WithAuth(repository.NewUserRepo(base), tm),
 		WithCompany(repository.NewCompanyRepo(base)),
+		WithSim(repository.NewSimStateRepo(base)),
 	)
 }
 

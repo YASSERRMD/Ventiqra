@@ -7,10 +7,12 @@ import (
 	"testing"
 
 	"github.com/YASSERRMD/Ventiqra/backend/internal/db"
+	"github.com/YASSERRMD/Ventiqra/backend/internal/testutil"
 )
 
 func userRepoForTest(t *testing.T) (*UserRepo, *Repository) {
 	t.Helper()
+	t.Cleanup(testutil.LockDB())
 	dsn := os.Getenv("DATABASE_TEST_URL")
 	if dsn == "" {
 		dsn = "postgres://ventiqra:changeme@localhost:5432/ventiqra?sslmode=disable"

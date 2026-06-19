@@ -7,12 +7,15 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/YASSERRMD/Ventiqra/backend/internal/testutil"
 )
 
 // testPool returns a pool connected to the DATABASE_TEST_URL (or DATABASE_URL)
 // when a database is reachable, or skips the test otherwise.
 func testPool(t *testing.T) *pgxpool.Pool {
 	t.Helper()
+	t.Cleanup(testutil.LockDB())
 	dsn := os.Getenv("DATABASE_TEST_URL")
 	if dsn == "" {
 		dsn = os.Getenv("DATABASE_URL")
