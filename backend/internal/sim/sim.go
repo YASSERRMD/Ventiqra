@@ -65,3 +65,15 @@ func (e *Engine) Tick(state *State) {
 	delta := MinDailyDeltaCents + state.Rand.Int64N(MaxDailyDeltaCents-MinDailyDeltaCents+1)
 	state.Cash += delta
 }
+
+// AdvanceDays runs the engine's Tick n times on the given state, simulating a
+// multi-day cycle in one call. n must be non-negative; a negative n leaves the
+// state untouched.
+func AdvanceDays(e *Engine, state *State, n int) {
+	if n < 0 || state == nil {
+		return
+	}
+	for i := 0; i < n; i++ {
+		e.Tick(state)
+	}
+}
