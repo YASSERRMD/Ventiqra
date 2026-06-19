@@ -33,6 +33,11 @@ func LoadMigrations() ([]Migration, error) {
 	return loadFromFS(migrations.MigrationsFS, ".")
 }
 
+// LoadSeeds reads embedded seed SQL files and returns them sorted by version.
+func LoadSeeds() ([]Migration, error) {
+	return loadFromFS(migrations.SeedsFS, "seeds")
+}
+
 func loadFromFS(fsys fs.FS, root string) ([]Migration, error) {
 	entries, err := fs.ReadDir(fsys, root)
 	if err != nil {
@@ -128,6 +133,34 @@ func applyMigration(ctx context.Context, pool *pgxpool.Pool, m Migration) error 
 		return fmt.Errorf("record: %w", err)
 	}
 	return tx.Commit(ctx)
+}
+
+// Seed applies all seed files in version order within a single transaction.
+// It returns the number of seed files applied.
+func Seed(ctx context.Context, pool *pgxpool.Pool) (int, error) {
+	all, err := LoadSeeds()
+	if err != nil {
+		return 0, err
+	}
+	if len(all) == 0 {
+		return 0, nil
+	}
+
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("begin seed tx: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	for i, s := range all {
+		if _, err := tx.Exec(ctx, s.SQL); err != nil {
+			return i, fmt.Errorf("seed %d (%s): %w", s.Version, s.Name, err)
+		}
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return 0, fmt.Errorf("commit seeds: %w", err)
+	}
+	return len(all), nil
 }
 
 // WithTx is a helper that runs fn inside a transaction, committing on nil error.

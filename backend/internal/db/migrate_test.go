@@ -65,6 +65,16 @@ func TestLoadMigrationsIsSortedAndNonEmpty(t *testing.T) {
 	}
 }
 
+func TestLoadSeeds(t *testing.T) {
+	ss, err := LoadSeeds()
+	if err != nil {
+		t.Fatalf("LoadSeeds: %v", err)
+	}
+	if len(ss) == 0 {
+		t.Fatal("expected at least one seed")
+	}
+}
+
 func TestMigrateAppliesAndIsIdempotent(t *testing.T) {
 	pool := testPoolForMigrations(t)
 	ctx := context.Background()
@@ -100,5 +110,22 @@ func TestMigrateAppliesAndIsIdempotent(t *testing.T) {
 		`SELECT extname FROM pg_extension WHERE extname = 'pgcrypto'`).Scan(&ext)
 	if err != nil || ext != "pgcrypto" {
 		t.Errorf("pgcrypto extension missing: %v", err)
+	}
+}
+
+func TestSeedRunsAfterMigrate(t *testing.T) {
+	pool := testPoolForMigrations(t)
+	ctx := context.Background()
+
+	if _, err := Migrate(ctx, pool); err != nil {
+		t.Fatalf("migrate before seed: %v", err)
+	}
+
+	n, err := Seed(ctx, pool)
+	if err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	if n == 0 {
+		t.Error("expected at least one seed applied")
 	}
 }
