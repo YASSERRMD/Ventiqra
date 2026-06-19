@@ -19,13 +19,14 @@ import (
 
 // Server is the Ventiqra HTTP API server.
 type Server struct {
-	cfg    config.Config
-	log    *slog.Logger
-	mux    *http.ServeMux
-	server *http.Server
-	db     HealthChecker
-	users  *repository.UserRepo
-	tokens *auth.TokenManager
+	cfg       config.Config
+	log       *slog.Logger
+	mux       *http.ServeMux
+	server    *http.Server
+	db        HealthChecker
+	users     *repository.UserRepo
+	tokens    *auth.TokenManager
+	companies *repository.CompanyRepo
 }
 
 // HealthChecker is anything that can report its own health via Ping.
@@ -50,6 +51,11 @@ func WithAuth(users *repository.UserRepo, tokens *auth.TokenManager) Option {
 		s.users = users
 		s.tokens = tokens
 	}
+}
+
+// WithCompany enables the company service by providing a CompanyRepo.
+func WithCompany(companies *repository.CompanyRepo) Option {
+	return func(s *Server) { s.companies = companies }
 }
 
 // New constructs a Server with routes registered.
@@ -93,9 +99,19 @@ func (s *Server) registerRoutes() {
 	if s.users != nil && s.tokens != nil {
 		s.mux.HandleFunc("POST /api/v1/auth/register", s.handleRegister)
 		s.mux.HandleFunc("POST /api/v1/auth/login", s.handleLogin)
-		s.mux.Handle("GET /api/v1/me", middleware.AuthRequired(s.tokenParser(), s.log)(
-			http.HandlerFunc(s.handleMe)))
+		s.mux.Handle("GET /api/v1/me", s.protected(http.HandlerFunc(s.handleMe)))
 	}
+
+	if s.tokens != nil && s.companies != nil {
+		s.mux.Handle("POST /api/v1/companies", s.protected(http.HandlerFunc(s.handleCreateCompany)))
+		s.mux.Handle("GET /api/v1/companies/me", s.protected(http.HandlerFunc(s.handleMyCompany)))
+		s.mux.Handle("GET /api/v1/companies/{id}", s.protected(http.HandlerFunc(s.handleGetCompany)))
+	}
+}
+
+// protected wraps a handler with the JWT AuthRequired middleware.
+func (s *Server) protected(h http.Handler) http.Handler {
+	return middleware.AuthRequired(s.tokenParser(), s.log)(h)
 }
 
 // ListenAndServe starts the HTTP server. It blocks until the server is shut

@@ -44,7 +44,11 @@ func newAuthTestServer(t *testing.T) *Server {
 		t.Fatalf("token manager: %v", err)
 	}
 	cfg := config.Config{Env: "test"}
-	return New(cfg, slog.Default(), WithDB(pool), WithAuth(repository.NewUserRepo(base), tm))
+	return New(cfg, slog.Default(),
+		WithDB(pool),
+		WithAuth(repository.NewUserRepo(base), tm),
+		WithCompany(repository.NewCompanyRepo(base)),
+	)
 }
 
 func doJSON(t *testing.T, srv *Server, method, path string, body any, auth string) *httptest.ResponseRecorder {
