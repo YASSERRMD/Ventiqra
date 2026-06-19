@@ -1,4 +1,5 @@
 import { PageHeader } from "@/components/layout/page-header";
+import { BackendStatus } from "@/components/dashboard/backend-status";
 
 const METRICS = [
   { label: "Cash", value: "—", hint: "Available capital" },
@@ -13,6 +14,7 @@ export default function DashboardPage() {
       <PageHeader
         title="Dashboard"
         subtitle="Your company at a glance. Metrics come online as you build."
+        action={<BackendStatus />}
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
