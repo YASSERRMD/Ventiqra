@@ -26,3 +26,16 @@ export type Metrics = {
   runway_months: number;
   day: number;
 };
+
+export type ProductStage = "idea" | "building" | "launched" | "retired";
+
+export type Product = {
+  id: string;
+  name: string;
+  slug: string;
+  stage: ProductStage;
+  dev_progress: number;
+  price_cents: number | null;
+  created_at: string;
+  updated_at: string;
+};
