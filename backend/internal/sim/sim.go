@@ -43,6 +43,22 @@ func NewEngine(seed int64) *Engine {
 // Seed returns the engine's deterministic seed.
 func (e *Engine) Seed() int64 { return e.seed }
 
+// pcgStreamSalt is XORed against the seed to derive the second PCG stream so
+// that two different callers seeding with related ints still diverge.
+const pcgStreamSalt uint64 = 0x9E3779B97F4A7C15
+
+// NewRand creates a deterministic *rand.Rand for the given seed, advanced past
+// `day` already-applied ticks. Recreating a Rand with the same seed and day
+// reproduces the exact stream position, so reloaded state produces the same
+// next delta as a continuous run.
+func NewRand(seed int64, day int) *rand.Rand {
+	r := rand.New(rand.NewPCG(uint64(seed), uint64(seed)^pcgStreamSalt))
+	for i := 0; i < day; i++ {
+		_ = r.Int64N(MaxDailyDeltaCents - MinDailyDeltaCents + 1)
+	}
+	return r
+}
+
 // NewState creates a fresh State for a company using the engine's seed. The
 // returned State carries its own *rand.Rand so that advancing it does not
 // affect other simulations sharing the same engine.
@@ -52,7 +68,7 @@ func (e *Engine) NewState(companyID string, cash int64) *State {
 		Day:       0,
 		Cash:      cash,
 		Seed:      e.seed,
-		Rand:      rand.New(rand.NewPCG(uint64(e.seed), uint64(e.seed)^0x9E3779B97F4A7C15)),
+		Rand:      NewRand(e.seed, 0),
 	}
 }
 
