@@ -16,15 +16,28 @@ const MinDailyDeltaCents int64 = -100_000
 // cash delta, expressed in cents.
 const MaxDailyDeltaCents int64 = 50_000
 
+// BaseMonthlyBurnCents is the small fixed monthly operating cost (in cents)
+// every company pays before it has employees or products. It keeps the burn
+// non-zero so runway is meaningful from day one while remaining deterministic:
+// the same value is applied to every company regardless of seed.
+const BaseMonthlyBurnCents int64 = 500_000
+
+// DaysPerMonth is the fixed convention for converting a monthly burn into a
+// daily accrual. Using a constant (instead of a calendar) keeps the engine pure
+// and its output reproducible.
+const DaysPerMonth int = 30
+
 // State holds the mutable simulation state for a single company. The *rand.Rand
 // drives the deterministic daily change; callers must not share the same Rand
 // across unrelated simulations.
 type State struct {
-	CompanyID string
-	Day       int
-	Cash      int64 // cents
-	Seed      int64
-	Rand      *rand.Rand
+	CompanyID   string
+	Day         int
+	Cash        int64 // cents
+	Revenue     int64 // cents accrued per day (0 until products exist)
+	MonthlyBurn int64 // cents per month
+	Seed        int64
+	Rand        *rand.Rand
 }
 
 // Engine applies simulation rules to a State. The zero value is not usable;
@@ -64,22 +77,32 @@ func NewRand(seed int64, day int) *rand.Rand {
 // affect other simulations sharing the same engine.
 func (e *Engine) NewState(companyID string, cash int64) *State {
 	return &State{
-		CompanyID: companyID,
-		Day:       0,
-		Cash:      cash,
-		Seed:      e.seed,
-		Rand:      NewRand(e.seed, 0),
+		CompanyID:   companyID,
+		Day:         0,
+		Cash:        cash,
+		Revenue:     0,
+		MonthlyBurn: BaseMonthlyBurnCents,
+		Seed:        e.seed,
+		Rand:        NewRand(e.seed, 0),
 	}
 }
 
+// DailyBurn returns the deterministic daily operating cost (in cents) for the
+// given monthly burn. It is derived purely from the monthly figure divided by
+// DaysPerMonth (truncated), so the same monthly burn always yields the same
+// daily deduction.
+func DailyBurn(monthlyBurn int64) int64 { return monthlyBurn / int64(DaysPerMonth) }
+
 // Tick advances the simulation by one day, mutating state in place. The cash
-// delta is drawn deterministically from state.Rand in [MinDailyDeltaCents,
-// MaxDailyDeltaCents]. The engine receives the state so future rules can be
-// added without expanding the State struct.
+// delta has three deterministic components: a random delta drawn from
+// state.Rand in [MinDailyDeltaCents, MaxDailyDeltaCents], the day's accrued
+// revenue (state.Revenue), and the daily operating cost derived from
+// state.MonthlyBurn. Revenue is 0 until products exist (Phase 9); the burn
+// keeps the model realistic while remaining fully reproducible.
 func (e *Engine) Tick(state *State) {
 	state.Day++
 	delta := MinDailyDeltaCents + state.Rand.Int64N(MaxDailyDeltaCents-MinDailyDeltaCents+1)
-	state.Cash += delta
+	state.Cash += delta + state.Revenue - DailyBurn(state.MonthlyBurn)
 }
 
 // AdvanceDays runs the engine's Tick n times on the given state, simulating a

@@ -61,7 +61,9 @@ func TestSimTickInitializesAndAdvances(t *testing.T) {
 		t.Errorf("seed should be derived and non-zero")
 	}
 	delta := tick1.CashCents - startCash
-	if delta < -100_000 || delta > 50_000 {
+	// The net delta is the random component minus the deterministic daily burn.
+	burn := sim.BaseMonthlyBurnCents / int64(sim.DaysPerMonth)
+	if delta < sim.MinDailyDeltaCents-burn || delta > sim.MaxDailyDeltaCents {
 		t.Errorf("first-tick delta %d out of range", delta)
 	}
 

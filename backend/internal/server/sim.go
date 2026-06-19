@@ -45,7 +45,7 @@ func (s *Server) handleSimTick(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		seed := sim.SeedFromCompanyID(company.ID)
-		state, err = s.sim.Init(r.Context(), company.ID, seed, company.Cash)
+		state, err = s.sim.Init(r.Context(), company.ID, seed, company.Cash, sim.BaseMonthlyBurnCents)
 		if err != nil {
 			s.log.Error("sim tick: init state failed", "error", err)
 			writeError(w, http.StatusInternalServerError, "could not initialize simulation state")
@@ -56,15 +56,17 @@ func (s *Server) handleSimTick(w http.ResponseWriter, r *http.Request) {
 	// Build the in-memory sim state from persisted values and advance one day.
 	engine := sim.NewEngine(state.Seed)
 	simState := &sim.State{
-		CompanyID: state.CompanyID,
-		Day:       state.Day,
-		Cash:      state.Cash,
-		Seed:      state.Seed,
-		Rand:      sim.NewRand(state.Seed, state.Day),
+		CompanyID:   state.CompanyID,
+		Day:         state.Day,
+		Cash:        state.Cash,
+		Revenue:     state.Revenue,
+		MonthlyBurn: state.MonthlyBurn,
+		Seed:        state.Seed,
+		Rand:        sim.NewRand(state.Seed, state.Day),
 	}
 	engine.Tick(simState)
 
-	if err := s.sim.Save(r.Context(), company.ID, simState.Day, simState.Cash); err != nil {
+	if err := s.sim.Save(r.Context(), company.ID, simState.Day, simState.Cash, simState.Revenue, simState.MonthlyBurn); err != nil {
 		s.log.Error("sim tick: save state failed", "error", err)
 		writeError(w, http.StatusInternalServerError, "could not save simulation state")
 		return

@@ -17,3 +17,12 @@ export type CompanyCreate = {
   description?: string;
   starting_cash_cents?: number;
 };
+
+export type Metrics = {
+  cash_cents: number;
+  revenue_cents: number;
+  burn_cents_per_month: number;
+  valuation_cents: number;
+  runway_months: number;
+  day: number;
+};
