@@ -21,14 +21,33 @@ type Server struct {
 	log    *slog.Logger
 	mux    *http.ServeMux
 	server *http.Server
+	db     HealthChecker
+}
+
+// HealthChecker is anything that can report its own health via Ping.
+// A *pgxpool.Pool satisfies this interface.
+type HealthChecker interface {
+	Ping(ctx context.Context) error
+}
+
+// Option configures a Server at construction time.
+type Option func(*Server)
+
+// WithDB attaches a database health checker to the server so the health
+// endpoint can report database reachability.
+func WithDB(db HealthChecker) Option {
+	return func(s *Server) { s.db = db }
 }
 
 // New constructs a Server with routes registered.
-func New(cfg config.Config, log *slog.Logger) *Server {
+func New(cfg config.Config, log *slog.Logger, opts ...Option) *Server {
 	s := &Server{
 		cfg: cfg,
 		log: log,
 		mux: http.NewServeMux(),
+	}
+	for _, opt := range opts {
+		opt(s)
 	}
 	s.registerRoutes()
 	s.server = &http.Server{
@@ -77,20 +96,46 @@ func (s *Server) Shutdown(ctx context.Context) error {
 
 // healthResponse is the body returned by the health endpoint.
 type healthResponse struct {
-	Status    string    `json:"status"`
-	Service   string    `json:"service"`
-	Env       string    `json:"env"`
-	Version   string    `json:"version,omitempty"`
-	Timestamp time.Time `json:"timestamp"`
+	Status    string         `json:"status"`
+	Service   string         `json:"service"`
+	Env       string         `json:"env"`
+	Version   string         `json:"version,omitempty"`
+	Timestamp time.Time      `json:"timestamp"`
+	Checks    map[string]any `json:"checks,omitempty"`
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, healthResponse{
-		Status:    "ok",
+	status := "ok"
+	httpStatus := http.StatusOK
+	checks := map[string]any{}
+
+	if s.db != nil {
+		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+		defer cancel()
+		start := time.Now()
+		err := s.db.Ping(ctx)
+		latency := time.Since(start)
+
+		dbCheck := map[string]any{"latency_ms": latency.Milliseconds()}
+		if err != nil {
+			dbCheck["status"] = "down"
+			dbCheck["error"] = err.Error()
+			status = "degraded"
+			httpStatus = http.StatusServiceUnavailable
+			s.log.Warn("health check: database down", "error", err)
+		} else {
+			dbCheck["status"] = "up"
+		}
+		checks["database"] = dbCheck
+	}
+
+	writeJSON(w, httpStatus, healthResponse{
+		Status:    status,
 		Service:   "ventiqra-api",
 		Env:       s.cfg.Env,
 		Version:   APIVersion,
 		Timestamp: time.Now().UTC(),
+		Checks:    checks,
 	})
 }
 
