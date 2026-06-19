@@ -10,9 +10,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/YASSERRMD/Ventiqra/backend/internal/auth"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/config"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/db"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/logger"
+	"github.com/YASSERRMD/Ventiqra/backend/internal/repository"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/server"
 )
 
@@ -57,7 +59,16 @@ func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	srv := server.New(cfg, log, server.WithDB(pool))
+	opts := []server.Option{server.WithDB(pool)}
+
+	if tm, err := auth.NewTokenManager(cfg.JWT.Secret, cfg.JWT.AccessTTL); err != nil {
+		log.Warn("auth disabled: JWT secret not configured", "error", err)
+	} else {
+		opts = append(opts, server.WithAuth(repository.NewUserRepo(repository.New(pool)), tm))
+		log.Info("auth enabled")
+	}
+
+	srv := server.New(cfg, log, opts...)
 
 	// Serve until the server stops on its own.
 	serveErr := make(chan error, 1)
