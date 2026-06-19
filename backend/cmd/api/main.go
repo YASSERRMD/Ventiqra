@@ -68,8 +68,9 @@ func run() error {
 		opts = append(opts,
 			server.WithAuth(repository.NewUserRepo(baseRepo), tm),
 			server.WithCompany(repository.NewCompanyRepo(baseRepo)),
+			server.WithSim(repository.NewSimStateRepo(baseRepo)),
 		)
-		log.Info("auth and company services enabled")
+		log.Info("auth, company, and simulation services enabled")
 	}
 
 	srv := server.New(cfg, log, opts...)

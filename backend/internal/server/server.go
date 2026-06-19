@@ -27,6 +27,7 @@ type Server struct {
 	users     *repository.UserRepo
 	tokens    *auth.TokenManager
 	companies *repository.CompanyRepo
+	sim       *repository.SimStateRepo
 }
 
 // HealthChecker is anything that can report its own health via Ping.
@@ -56,6 +57,11 @@ func WithAuth(users *repository.UserRepo, tokens *auth.TokenManager) Option {
 // WithCompany enables the company service by providing a CompanyRepo.
 func WithCompany(companies *repository.CompanyRepo) Option {
 	return func(s *Server) { s.companies = companies }
+}
+
+// WithSim enables the simulation service by providing a SimStateRepo.
+func WithSim(repo *repository.SimStateRepo) Option {
+	return func(s *Server) { s.sim = repo }
 }
 
 // New constructs a Server with routes registered.
@@ -106,6 +112,10 @@ func (s *Server) registerRoutes() {
 		s.mux.Handle("POST /api/v1/companies", s.protected(http.HandlerFunc(s.handleCreateCompany)))
 		s.mux.Handle("GET /api/v1/companies/me", s.protected(http.HandlerFunc(s.handleMyCompany)))
 		s.mux.Handle("GET /api/v1/companies/{id}", s.protected(http.HandlerFunc(s.handleGetCompany)))
+	}
+
+	if s.tokens != nil && s.companies != nil && s.sim != nil {
+		s.mux.Handle("POST /api/v1/companies/me/sim/tick", s.protected(http.HandlerFunc(s.handleSimTick)))
 	}
 }
 

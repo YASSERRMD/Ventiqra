@@ -6,10 +6,14 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/YASSERRMD/Ventiqra/backend/internal/testutil"
 )
 
 func testPoolForMigrations(t *testing.T) *pgxpool.Pool {
 	t.Helper()
+	// Serialize schema resets across test binaries that share this database.
+	t.Cleanup(testutil.LockDB())
 	dsn := os.Getenv("DATABASE_TEST_URL")
 	if dsn == "" {
 		dsn = "postgres://ventiqra:changeme@localhost:5432/ventiqra?sslmode=disable"
