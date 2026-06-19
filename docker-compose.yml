@@ -1,0 +1,111 @@
+# =============================================================================
+# Ventiqra - Docker Compose
+# =============================================================================
+# Phase 1 skeleton: provisions core data services (PostgreSQL, Redis) that the
+# rest of the stack depends on. The backend (Go) and frontend (Next.js) services
+# are defined behind a profile and will be activated in later phases once their
+# Dockerfiles exist.
+#
+# Usage:
+#   cp .env.example .env
+#   docker compose up -d              # start data services
+#   docker compose --profile app up -d  # (later phases) also build/run apps
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: ventiqra-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ventiqra}
+      POSTGRES_USER: ${POSTGRES_USER:-ventiqra}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ventiqra} -d ${POSTGRES_DB:-ventiqra}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ventiqra
+
+  # ---------------------------------------------------------------------------
+  # Redis (cache / queue)
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: ventiqra-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ventiqra
+
+  # ---------------------------------------------------------------------------
+  # Backend (Go API) - activated in later phases
+  # ---------------------------------------------------------------------------
+  backend:
+    profiles: ["app"]
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ventiqra-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-ventiqra}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-ventiqra}?sslmode=disable
+      REDIS_URL: redis://redis:6379/0
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ventiqra
+
+  # ---------------------------------------------------------------------------
+  # Frontend (Next.js) - activated in later phases
+  # ---------------------------------------------------------------------------
+  frontend:
+    profiles: ["app"]
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ventiqra-frontend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NEXT_PUBLIC_API_URL: ${BACKEND_URL:-http://localhost:8080}
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    depends_on:
+      - backend
+    networks:
+      - ventiqra
+
+networks:
+  ventiqra:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
