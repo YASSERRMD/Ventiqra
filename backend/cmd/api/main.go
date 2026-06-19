@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/YASSERRMD/Ventiqra/backend/internal/config"
+	"github.com/YASSERRMD/Ventiqra/backend/internal/logger"
 )
 
 func main() {
@@ -21,6 +22,12 @@ func run() error {
 		return fmt.Errorf("load config: %w", err)
 	}
 
-	fmt.Printf("ventiqra-api starting (env=%s, port=%s)\n", cfg.Env, cfg.HTTP.Port)
+	log := logger.New(cfg.Log.Level, cfg.Log.Format)
+
+	log.Info("ventiqra-api starting",
+		"env", cfg.Env,
+		"port", cfg.HTTP.Port,
+		"log_level", cfg.Log.Level,
+	)
 	return nil
 }
