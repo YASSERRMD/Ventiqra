@@ -22,8 +22,8 @@ func testPoolForMigrations(t *testing.T) *pgxpool.Pool {
 	t.Cleanup(func() { Close(pool) })
 
 	// Start from a clean slate for deterministic migration tests.
-	if _, err := pool.Exec(ctx, `DROP TABLE IF EXISTS schema_migrations`); err != nil {
-		t.Fatalf("drop schema_migrations: %v", err)
+	if _, err := pool.Exec(ctx, `DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;`); err != nil {
+		t.Fatalf("reset public schema: %v", err)
 	}
 	return pool
 }

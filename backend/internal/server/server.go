@@ -11,8 +11,10 @@ import (
 
 	"log/slog"
 
+	"github.com/YASSERRMD/Ventiqra/backend/internal/auth"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/config"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/middleware"
+	"github.com/YASSERRMD/Ventiqra/backend/internal/repository"
 )
 
 // Server is the Ventiqra HTTP API server.
@@ -22,6 +24,8 @@ type Server struct {
 	mux    *http.ServeMux
 	server *http.Server
 	db     HealthChecker
+	users  *repository.UserRepo
+	tokens *auth.TokenManager
 }
 
 // HealthChecker is anything that can report its own health via Ping.
@@ -37,6 +41,15 @@ type Option func(*Server)
 // endpoint can report database reachability.
 func WithDB(db HealthChecker) Option {
 	return func(s *Server) { s.db = db }
+}
+
+// WithAuth enables authentication by providing a user repository and token
+// manager. When set, the auth and protected routes are registered.
+func WithAuth(users *repository.UserRepo, tokens *auth.TokenManager) Option {
+	return func(s *Server) {
+		s.users = users
+		s.tokens = tokens
+	}
 }
 
 // New constructs a Server with routes registered.
@@ -76,6 +89,13 @@ func (s *Server) Handler() http.Handler { return s.mux }
 // registerRoutes wires all API routes.
 func (s *Server) registerRoutes() {
 	s.mux.HandleFunc("GET /healthz", s.handleHealth)
+
+	if s.users != nil && s.tokens != nil {
+		s.mux.HandleFunc("POST /api/v1/auth/register", s.handleRegister)
+		s.mux.HandleFunc("POST /api/v1/auth/login", s.handleLogin)
+		s.mux.Handle("GET /api/v1/me", middleware.AuthRequired(s.tokenParser(), s.log)(
+			http.HandlerFunc(s.handleMe)))
+	}
 }
 
 // ListenAndServe starts the HTTP server. It blocks until the server is shut
