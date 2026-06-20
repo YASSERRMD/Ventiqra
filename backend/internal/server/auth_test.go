@@ -52,6 +52,7 @@ func newAuthTestServer(t *testing.T) *Server {
 		WithCompany(repository.NewCompanyRepo(base)),
 		WithSim(repository.NewSimStateRepo(base)),
 		WithProducts(repository.NewProductRepo(base)),
+		WithEmployees(repository.NewEmployeeRepo(base)),
 	)
 }
 
