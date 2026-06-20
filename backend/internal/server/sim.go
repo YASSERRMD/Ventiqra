@@ -8,6 +8,7 @@ import (
 	"github.com/YASSERRMD/Ventiqra/backend/internal/customers"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/develop"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/middleware"
+	"github.com/YASSERRMD/Ventiqra/backend/internal/pricing"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/repository"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/sim"
 )
@@ -78,8 +79,9 @@ func (s *Server) handleSimTick(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Advance customer dynamics (acquisition/churn/MAU/satisfaction) for every
-	// launched product, deterministically for the round.
-	s.advanceCustomers(r.Context(), company.ID, state.Seed, state.Day+1)
+	// launched product, deterministically for the round. Pricing feeds demand and
+	// the daily revenue total is returned to the engine.
+	simState.Revenue = s.advanceCustomers(r.Context(), company.ID, state.Seed, state.Day+1)
 
 	engine.Tick(simState)
 
@@ -149,30 +151,42 @@ func (s *Server) advanceBuildingProducts(ctx context.Context, companyID string, 
 
 // advanceCustomers advances acquisition/churn/MAU/satisfaction for every
 // launched product that has customer state, deterministically for the round.
-func (s *Server) advanceCustomers(ctx context.Context, companyID string, seed int64, day int) {
+// Pricing drives per-product demand and the returned value is the total daily
+// revenue (in cents) produced by the paying customer base.
+func (s *Server) advanceCustomers(ctx context.Context, companyID string, seed int64, day int) int64 {
 	if s.customers == nil || s.products == nil {
-		return
+		return 0
 	}
 	list, err := s.customers.ListByCompany(ctx, companyID)
 	if err != nil || len(list) == 0 {
-		return
+		return 0
 	}
-	launched := map[string]bool{}
 	products, _ := s.products.ListProductsByCompany(ctx, companyID)
+	launched := make(map[string]*repository.Product, len(products))
 	for _, p := range products {
 		if p.Stage == repository.ProductLaunched {
-			launched[p.ID] = true
+			launched[p.ID] = p
 		}
 	}
+
+	var dailyRevenue int64
 	for _, c := range list {
-		if !launched[c.ProductID] {
+		p, ok := launched[c.ProductID]
+		if !ok {
 			continue
 		}
+		var price int64
+		if p.PriceCents != nil {
+			price = *p.PriceCents
+		}
+		demand := pricing.DemandMultiplier(price, pricing.BaselineMonthlyCents, pricing.DefaultElasticity)
 		next := customers.Advance(customers.Product{
 			Total: c.Total, MAU: c.MAU, Churned: c.Churned, Satisfaction: c.Satisfaction,
-		}, seed, day)
+		}, seed, day, demand)
 		if err := s.customers.Save(ctx, c.ProductID, next.Total, next.MAU, next.Churned, next.Satisfaction); err != nil {
 			s.log.Error("advance customers failed", "product", c.ProductID, "error", err)
 		}
+		dailyRevenue += pricing.DailyRevenueCents(next.Total, price)
 	}
+	return dailyRevenue
 }
