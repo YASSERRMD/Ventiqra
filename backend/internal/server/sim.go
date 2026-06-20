@@ -8,6 +8,7 @@ import (
 	"github.com/YASSERRMD/Ventiqra/backend/internal/customers"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/develop"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/finance"
+	metricsModule "github.com/YASSERRMD/Ventiqra/backend/internal/metrics"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/middleware"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/pricing"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/repository"
@@ -19,6 +20,8 @@ type simTickResponse struct {
 	Day       int    `json:"day"`
 	Seed      int64  `json:"seed"`
 	CashCents int64  `json:"cash_cents"`
+	Status    string `json:"status"`
+	Health    string `json:"health"`
 }
 
 // handleSimTick advances the owner's latest company simulation by exactly one
@@ -38,6 +41,12 @@ func (s *Server) handleSimTick(w http.ResponseWriter, r *http.Request) {
 		}
 		s.log.Error("sim tick: load company failed", "error", err)
 		writeError(w, http.StatusInternalServerError, "could not load company")
+		return
+	}
+
+	// Game over: a bankrupt company cannot advance the simulation.
+	if company.Status == repository.CompanyBankrupt {
+		writeError(w, http.StatusConflict, "company is bankrupt; restart to play again")
 		return
 	}
 
@@ -102,11 +111,24 @@ func (s *Server) handleSimTick(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Bankruptcy detection: once cash goes negative the game is over for this
+	// company until the owner restarts.
+	status := company.Status
+	if simState.Cash < 0 {
+		status = repository.CompanyBankrupt
+		if err := s.companies.UpdateStatus(r.Context(), company.ID, status); err != nil {
+			s.log.Error("sim tick: mark bankrupt failed", "error", err)
+		}
+	}
+
+	runway := metricsModule.Compute(simState.Cash, simState.Revenue, simState.MonthlyBurn, 0, simState.Day).RunwayMonths
 	writeJSON(w, http.StatusOK, simTickResponse{
 		CompanyID: company.ID,
 		Day:       simState.Day,
 		Seed:      simState.Seed,
 		CashCents: simState.Cash,
+		Status:    string(status),
+		Health:    metricsModule.Health(simState.Cash, runway),
 	})
 }
 

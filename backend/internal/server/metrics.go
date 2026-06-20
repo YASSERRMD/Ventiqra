@@ -17,6 +17,8 @@ type metricsResponse struct {
 	ValuationCents    int64   `json:"valuation_cents"`
 	RunwayMonths      float64 `json:"runway_months"`
 	Day               int     `json:"day"`
+	Health            string  `json:"health"`
+	Status            string  `json:"status"`
 }
 
 // handleMetrics returns the owner's latest company metrics. If no simulation
@@ -65,5 +67,7 @@ func (s *Server) handleMetrics(w http.ResponseWriter, r *http.Request) {
 		ValuationCents:    m.ValuationCents,
 		RunwayMonths:      m.RunwayMonths,
 		Day:               state.Day,
+		Health:            metrics.Health(m.CashCents, m.RunwayMonths),
+		Status:            string(company.Status),
 	})
 }
