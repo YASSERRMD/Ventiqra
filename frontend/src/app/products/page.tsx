@@ -5,7 +5,7 @@ import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import { getToken, clearToken } from "@/lib/auth";
 import { formatCents } from "@/lib/format";
-import type { Product, ProductStage } from "@/lib/types";
+import type { Product, ProductStage, LaunchResult, LaunchEvent } from "@/lib/types";
 import { PageHeader } from "@/components/layout/page-header";
 
 type State =
@@ -149,6 +149,7 @@ export default function ProductsPage() {
           ))}
         </div>
       )}
+      <LaunchHistory />
     </div>
   );
 }
@@ -169,11 +170,48 @@ function ProductCard({
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [launchMsg, setLaunchMsg] = useState<string | null>(null);
 
   const nextStage =
     product.stage === "retired"
       ? null
       : STAGES[STAGES.indexOf(product.stage) + 1];
+
+  async function launch() {
+    const token = getToken();
+    if (!token) {
+      setError("You are no longer logged in.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    setLaunchMsg(null);
+    try {
+      const res = await api.post<LaunchResult>(
+        `/api/v1/products/${product.id}/launch`,
+        undefined,
+        { token },
+      );
+      setLaunchMsg(
+        `Launched! Readiness ${res.readiness.toFixed(0)}% · ${res.initial_customers} initial customers.`,
+      );
+      onChanged();
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        const body = err.body as { readiness?: number; required?: number } | null;
+        const r = body?.readiness;
+        setLaunchMsg(
+          r != null
+            ? `Not ready yet: ${r.toFixed(0)}% (need ${body?.required ?? 40}%).`
+            : err.message,
+        );
+      } else {
+        setError(err instanceof ApiError ? err.message : "Could not launch product.");
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function advance() {
     if (!nextStage) return;
@@ -243,6 +281,18 @@ function ProductCard({
         <span className="text-xs text-muted">This product is retired.</span>
       )}
 
+      {product.stage === "building" && (
+        <button
+          type="button"
+          onClick={launch}
+          disabled={busy}
+          className="rounded-md bg-emerald-500/90 px-3 py-1.5 text-xs font-semibold text-surface-muted outline-none transition hover:bg-emerald-500 disabled:opacity-60"
+        >
+          {busy ? "Launching…" : "Launch product"}
+        </button>
+      )}
+
+      {launchMsg && <p className="text-xs text-emerald-400">{launchMsg}</p>}
       {error && <p className="text-xs text-rose-400">{error}</p>}
     </div>
   );
@@ -302,5 +352,68 @@ function NewProduct({ onCreated }: { onCreated: () => void }) {
       </button>
       {error && <p className="text-sm text-rose-400">{error}</p>}
     </form>
+  );
+}
+
+function LaunchHistory() {
+  const [events, setEvents] = useState<LaunchEvent[] | null>(null);
+  const [open, setOpen] = useState(false);
+
+  async function toggle() {
+    const next = !open;
+    setOpen(next);
+    if (next && events === null) {
+      const token = getToken();
+      if (!token) {
+        setEvents([]);
+        return;
+      }
+      try {
+        const list = await api.get<LaunchEvent[]>("/api/v1/companies/me/launches", { token });
+        setEvents(list);
+      } catch {
+        setEvents([]);
+      }
+    }
+  }
+
+  return (
+    <section className="mt-8">
+      <button
+        type="button"
+        onClick={toggle}
+        className="text-sm font-medium text-brand hover:underline"
+      >
+        {open ? "Hide" : "Show"} launch history
+      </button>
+      {open && (
+        <div className="mt-3">
+          {events === null ? (
+            <p className="text-sm text-muted">Loading…</p>
+          ) : events.length === 0 ? (
+            <p className="text-sm text-muted">No launches yet.</p>
+          ) : (
+            <ul className="divide-y divide-border rounded-xl border border-border bg-surface">
+              {events.map((e) => (
+                <li key={e.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{e.product_name}</p>
+                    <p className="text-xs text-muted">
+                      {new Date(e.launched_at).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="text-right text-xs text-muted">
+                    <p>Readiness <span className="text-foreground">{e.readiness.toFixed(0)}%</span></p>
+                    <p>
+                      <span className="text-foreground">{e.initial_customers}</span> initial customers
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </section>
   );
 }
