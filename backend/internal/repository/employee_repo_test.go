@@ -40,7 +40,7 @@ func TestCreateAndGetEmployee(t *testing.T) {
 	companyID := mustSeedCompany(t, companies, users)
 	ctx := context.Background()
 
-	e, err := repo.CreateEmployee(ctx, companyID, "Ada Lovelace", RoleEngineer, 0, 0, 0)
+	e, err := repo.CreateEmployee(ctx, companyID, "Ada Lovelace", RoleEngineer, 0, -1, -1)
 	if err != nil {
 		t.Fatalf("CreateEmployee: %v", err)
 	}
