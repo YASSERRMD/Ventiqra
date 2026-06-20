@@ -133,3 +133,19 @@ export type PricingExperiment = {
   sim_day: number;
   created_at: string;
 };
+
+export type FinanceBreakdown = {
+  base_cents: number;
+  salary_cents: number;
+  infra_cents: number;
+  marketing_cents: number;
+  total_burn_cents: number;
+};
+
+export type Finance = {
+  marketing_budget_cents: number;
+  monthly_revenue_cents: number;
+  burn: FinanceBreakdown;
+  profit_loss_cents: number;
+  day: number;
+};

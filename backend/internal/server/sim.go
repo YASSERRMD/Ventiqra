@@ -7,6 +7,7 @@ import (
 
 	"github.com/YASSERRMD/Ventiqra/backend/internal/customers"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/develop"
+	"github.com/YASSERRMD/Ventiqra/backend/internal/finance"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/middleware"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/pricing"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/repository"
@@ -69,19 +70,23 @@ func (s *Server) handleSimTick(w http.ResponseWriter, r *http.Request) {
 		Rand:        sim.NewRand(state.Seed, state.Day),
 	}
 
-	// Apply employee-driven effects for the day: payroll raises burn and builders
-	// advance any in-progress products. Both are nil-guarded so the simulation
-	// still works before the employee/product services are configured.
+	// Apply employee-driven development for the day.
 	roster, salaries := s.loadRoster(r.Context(), company.ID)
 	if len(roster) > 0 {
-		simState.MonthlyBurn = sim.BaseMonthlyBurnCents + develop.MonthlyPayroll(salaries)
 		s.advanceBuildingProducts(r.Context(), company.ID, develop.DailyProgress(roster))
 	}
 
 	// Advance customer dynamics (acquisition/churn/MAU/satisfaction) for every
 	// launched product, deterministically for the round. Pricing feeds demand and
-	// the daily revenue total is returned to the engine.
-	simState.Revenue = s.advanceCustomers(r.Context(), company.ID, state.Seed, state.Day+1)
+	// the daily revenue total feeds the engine.
+	dailyRevenue, totalCustomers := s.advanceCustomers(r.Context(), company.ID, state.Seed, state.Day+1)
+
+	// Compute the full monthly burn from the finance breakdown: base overhead,
+	// payroll, infrastructure (scaled by customers), and marketing budget.
+	payroll := develop.MonthlyPayroll(salaries)
+	marketing := s.marketingBudget(r.Context(), company.ID)
+	simState.MonthlyBurn = finance.MonthlyBreakdown(payroll, marketing, totalCustomers).Total()
+	simState.Revenue = dailyRevenue
 
 	engine.Tick(simState)
 
@@ -151,15 +156,15 @@ func (s *Server) advanceBuildingProducts(ctx context.Context, companyID string, 
 
 // advanceCustomers advances acquisition/churn/MAU/satisfaction for every
 // launched product that has customer state, deterministically for the round.
-// Pricing drives per-product demand and the returned value is the total daily
-// revenue (in cents) produced by the paying customer base.
-func (s *Server) advanceCustomers(ctx context.Context, companyID string, seed int64, day int) int64 {
+// Returns the total daily revenue (in cents) and the total customer count
+// across launched products, so the finance engine can compute burn/P&L.
+func (s *Server) advanceCustomers(ctx context.Context, companyID string, seed int64, day int) (int64, int) {
 	if s.customers == nil || s.products == nil {
-		return 0
+		return 0, 0
 	}
 	list, err := s.customers.ListByCompany(ctx, companyID)
 	if err != nil || len(list) == 0 {
-		return 0
+		return 0, 0
 	}
 	products, _ := s.products.ListProductsByCompany(ctx, companyID)
 	launched := make(map[string]*repository.Product, len(products))
@@ -170,6 +175,7 @@ func (s *Server) advanceCustomers(ctx context.Context, companyID string, seed in
 	}
 
 	var dailyRevenue int64
+	var totalCustomers int
 	for _, c := range list {
 		p, ok := launched[c.ProductID]
 		if !ok {
@@ -187,6 +193,19 @@ func (s *Server) advanceCustomers(ctx context.Context, companyID string, seed in
 			s.log.Error("advance customers failed", "product", c.ProductID, "error", err)
 		}
 		dailyRevenue += pricing.DailyRevenueCents(next.Total, price)
+		totalCustomers += next.Total
 	}
-	return dailyRevenue
+	return dailyRevenue, totalCustomers
+}
+
+// marketingBudget returns the company's monthly marketing budget, or 0 when the
+// finance service is unavailable.
+func (s *Server) marketingBudget(ctx context.Context, companyID string) int64 {
+	if s.finance == nil {
+		return 0
+	}
+	if fin, err := s.finance.GetOrCreate(ctx, companyID); err == nil {
+		return fin.MarketingBudgetCents
+	}
+	return 0
 }

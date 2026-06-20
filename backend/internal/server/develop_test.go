@@ -20,11 +20,12 @@ func TestPayrollRaisesBurn(t *testing.T) {
 	token := registerAndLogin(t, srv)
 	doJSON(t, srv, "POST", "/api/v1/companies", map[string]any{"name": "Co"}, token)
 
-	// Baseline burn after a tick with no employees reflects only base burn.
+	// Baseline burn after a tick with no employees reflects base overhead + infra
+	// floor (no payroll, no marketing).
 	tickOnce(t, srv, token)
 	before := metricsFor(t, srv, token)
-	if before.BurnCentsPerMonth != 500_000 {
-		t.Fatalf("baseline burn = %d, want 500000", before.BurnCentsPerMonth)
+	if before.BurnCentsPerMonth != 550_000 {
+		t.Fatalf("baseline burn = %d, want 550000", before.BurnCentsPerMonth)
 	}
 
 	// Hire an engineer with a known monthly salary.
@@ -36,8 +37,8 @@ func TestPayrollRaisesBurn(t *testing.T) {
 
 	tickOnce(t, srv, token)
 	after := metricsFor(t, srv, token)
-	if after.BurnCentsPerMonth != 500_000+1_200_000 {
-		t.Errorf("burn with payroll = %d, want %d", after.BurnCentsPerMonth, 500_000+1_200_000)
+	if after.BurnCentsPerMonth != 550_000+1_200_000 {
+		t.Errorf("burn with payroll = %d, want %d", after.BurnCentsPerMonth, 550_000+1_200_000)
 	}
 }
 

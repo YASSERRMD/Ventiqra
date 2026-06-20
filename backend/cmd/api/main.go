@@ -74,8 +74,9 @@ func run() error {
 			server.WithLaunches(repository.NewLaunchRepo(baseRepo)),
 			server.WithCustomers(repository.NewCustomerRepo(baseRepo)),
 			server.WithPricing(repository.NewPricingRepo(baseRepo)),
+			server.WithFinance(repository.NewFinanceRepo(baseRepo)),
 		)
-		log.Info("auth, company, simulation, product, employee, launch, customer, and pricing services enabled")
+		log.Info("auth, company, simulation, product, employee, launch, customer, pricing, and finance services enabled")
 	}
 
 	srv := server.New(cfg, log, opts...)
