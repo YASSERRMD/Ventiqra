@@ -5,7 +5,7 @@ import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import { getToken, clearToken } from "@/lib/auth";
 import { formatCents } from "@/lib/format";
-import type { Product, ProductStage, LaunchResult, LaunchEvent } from "@/lib/types";
+import type { Product, ProductStage, LaunchResult, LaunchEvent, CustomerState } from "@/lib/types";
 import { PageHeader } from "@/components/layout/page-header";
 
 type State =
@@ -150,6 +150,7 @@ export default function ProductsPage() {
         </div>
       )}
       <LaunchHistory />
+      <CustomerOverview />
     </div>
   );
 }
@@ -411,6 +412,81 @@ function LaunchHistory() {
                 </li>
               ))}
             </ul>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function CustomerOverview() {
+  const [states, setStates] = useState<CustomerState[] | null>(null);
+  const [open, setOpen] = useState(false);
+
+  async function toggle() {
+    const next = !open;
+    setOpen(next);
+    if (next && states === null) {
+      const token = getToken();
+      if (!token) {
+        setStates([]);
+        return;
+      }
+      try {
+        const list = await api.get<CustomerState[]>("/api/v1/companies/me/customers", { token });
+        setStates(list);
+      } catch {
+        setStates([]);
+      }
+    }
+  }
+
+  return (
+    <section className="mt-8">
+      <button
+        type="button"
+        onClick={toggle}
+        className="text-sm font-medium text-brand hover:underline"
+      >
+        {open ? "Hide" : "Show"} customer overview
+      </button>
+      {open && (
+        <div className="mt-3">
+          {states === null ? (
+            <p className="text-sm text-muted">Loading…</p>
+          ) : states.length === 0 ? (
+            <p className="text-sm text-muted">No launched products with customers yet.</p>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {states.map((c) => {
+                const sat = Math.max(0, Math.min(100, c.satisfaction));
+                return (
+                  <div key={c.product_id} className="rounded-xl border border-border bg-surface p-4">
+                    <p className="text-sm font-semibold text-foreground">{c.product_name}</p>
+                    <dl className="mt-2 grid grid-cols-2 gap-y-1 text-xs text-muted">
+                      <dt>Customers</dt>
+                      <dd className="text-right text-foreground">{c.total_customers.toLocaleString()}</dd>
+                      <dt>MAU</dt>
+                      <dd className="text-right text-foreground">{c.mau.toLocaleString()}</dd>
+                      <dt>Churned</dt>
+                      <dd className="text-right text-foreground">{c.churned.toLocaleString()}</dd>
+                    </dl>
+                    <div className="mt-3">
+                      <div className="flex items-center justify-between text-xs text-muted">
+                        <span>Satisfaction</span>
+                        <span>{sat.toFixed(0)}</span>
+                      </div>
+                      <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-background">
+                        <div
+                          className="h-full rounded-full bg-emerald-500"
+                          style={{ width: `${sat}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
       )}
