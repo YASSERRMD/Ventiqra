@@ -5,7 +5,7 @@ import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import { getToken, clearToken } from "@/lib/auth";
 import { formatCents } from "@/lib/format";
-import type { Employee, EmployeeCreate, EmployeeRole } from "@/lib/types";
+import type { Employee, EmployeeCreate, EmployeeRole, Candidate } from "@/lib/types";
 import { EMPLOYEE_ROLES } from "@/lib/types";
 import { PageHeader } from "@/components/layout/page-header";
 
@@ -119,6 +119,7 @@ export default function EmployeesPage() {
         }
       />
       <HireEmployee onHired={refresh} />
+      <HiringMarket onChanged={refresh} />
       {state.employees.length === 0 ? (
         <div className="mt-6 rounded-xl border border-dashed border-border bg-surface/40 px-6 py-12 text-center">
           <h3 className="text-base font-medium text-foreground">No employees yet</h3>
@@ -354,5 +355,128 @@ function HireEmployee({ onHired }: { onHired: () => void }) {
       </button>
       {error && <p className="basis-full text-sm text-rose-400">{error}</p>}
     </form>
+  );
+}
+
+const QUALITY_TONE: Record<Candidate["quality"], string> = {
+  weak: "bg-zinc-500/15 text-zinc-300",
+  average: "bg-amber-500/15 text-amber-300",
+  strong: "bg-emerald-500/15 text-emerald-300",
+};
+
+function HiringMarket({ onChanged }: { onChanged: () => void }) {
+  const [candidates, setCandidates] = useState<Candidate[] | null>(null);
+  const [day, setDay] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<{ index: number; text: string; ok: boolean } | null>(null);
+
+  async function loadMarket() {
+    const token = getToken();
+    if (!token) {
+      setError("You are no longer logged in.");
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const pool = await api.get<{ day: number; candidates: Candidate[] }>(
+        "/api/v1/companies/me/candidates",
+        { token },
+      );
+      setCandidates(pool.candidates);
+      setDay(pool.day);
+      setResult(null);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not load candidates.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function makeOffer(c: Candidate) {
+    const token = getToken();
+    if (!token) {
+      setError("You are no longer logged in.");
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    setResult(null);
+    try {
+      const res = await api.post<{ accepted: boolean; message: string }>(
+        `/api/v1/companies/me/candidates/${c.index}/hire`,
+        undefined,
+        { token },
+      );
+      setResult({ index: c.index, text: res.message, ok: res.accepted });
+      onChanged();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not make offer.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <section className="mt-6">
+      <div className="mb-3 flex items-center justify-between">
+        <div>
+          <h3 className="text-base font-semibold text-foreground">Hiring market</h3>
+          <p className="text-xs text-muted">
+            Deterministic candidate pool{day != null ? ` — round day ${day}` : ""}. Offers resolve the same way until the day advances.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={loadMarket}
+          disabled={loading}
+          className="rounded-md border border-border bg-background px-3 py-1.5 text-xs font-semibold text-foreground outline-none transition hover:border-brand disabled:opacity-60"
+        >
+          {loading ? "Loading…" : candidates ? "Refresh" : "Show candidates"}
+        </button>
+      </div>
+
+      {error && <p className="text-sm text-rose-400">{error}</p>}
+
+      {candidates && (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {candidates.map((c) => (
+            <div key={c.index} className="flex flex-col gap-2 rounded-xl border border-border bg-surface p-4">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="text-sm font-semibold text-foreground">{c.name}</p>
+                  <p className="text-xs text-muted capitalize">{c.role}</p>
+                </div>
+                <span className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${QUALITY_TONE[c.quality]}`}>
+                  {c.quality}
+                </span>
+              </div>
+              <div className="text-xs text-muted">Skill: <span className="text-foreground">{c.skill}</span></div>
+              <div className="text-xs text-muted">
+                Salary: <span className="text-foreground">{formatCents(c.salary_expectation_cents)}/mo</span>
+              </div>
+              <div className="text-xs text-muted">
+                Hiring fee: <span className="text-foreground">{formatCents(c.hiring_fee_cents)}</span>
+              </div>
+              <div className="text-xs text-muted">
+                Acceptance: <span className="text-foreground">{(c.acceptance_chance * 100).toFixed(0)}%</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => makeOffer(c)}
+                disabled={loading}
+                className="mt-1 rounded-md bg-brand px-3 py-1.5 text-xs font-semibold text-surface-muted disabled:opacity-60"
+              >
+                Make offer
+              </button>
+              {result && result.index === c.index && (
+                <p className={`text-xs ${result.ok ? "text-emerald-400" : "text-rose-400"}`}>{result.text}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
