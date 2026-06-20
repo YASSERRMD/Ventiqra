@@ -98,3 +98,18 @@ export type HireResult = {
   message: string;
   employee?: Employee;
 };
+
+export type LaunchResult = {
+  readiness: number;
+  initial_customers: number;
+  product: Product;
+};
+
+export type LaunchEvent = {
+  id: string;
+  product_id: string;
+  product_name: string;
+  readiness: number;
+  initial_customers: number;
+  launched_at: string;
+};

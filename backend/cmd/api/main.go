@@ -71,8 +71,9 @@ func run() error {
 			server.WithSim(repository.NewSimStateRepo(baseRepo)),
 			server.WithProducts(repository.NewProductRepo(baseRepo)),
 			server.WithEmployees(repository.NewEmployeeRepo(baseRepo)),
+			server.WithLaunches(repository.NewLaunchRepo(baseRepo)),
 		)
-		log.Info("auth, company, simulation, product, and employee services enabled")
+		log.Info("auth, company, simulation, product, employee, and launch services enabled")
 	}
 
 	srv := server.New(cfg, log, opts...)
