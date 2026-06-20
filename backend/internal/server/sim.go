@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/YASSERRMD/Ventiqra/backend/internal/customers"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/develop"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/middleware"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/repository"
@@ -76,6 +77,10 @@ func (s *Server) handleSimTick(w http.ResponseWriter, r *http.Request) {
 		s.advanceBuildingProducts(r.Context(), company.ID, develop.DailyProgress(roster))
 	}
 
+	// Advance customer dynamics (acquisition/churn/MAU/satisfaction) for every
+	// launched product, deterministically for the round.
+	s.advanceCustomers(r.Context(), company.ID, state.Seed, state.Day+1)
+
 	engine.Tick(simState)
 
 	if err := s.sim.Save(r.Context(), company.ID, simState.Day, simState.Cash, simState.Revenue, simState.MonthlyBurn); err != nil {
@@ -138,6 +143,36 @@ func (s *Server) advanceBuildingProducts(ctx context.Context, companyID string, 
 		}
 		if err := s.products.UpdateProgress(ctx, p.ID, next); err != nil {
 			s.log.Error("advance product progress failed", "product", p.ID, "error", err)
+		}
+	}
+}
+
+// advanceCustomers advances acquisition/churn/MAU/satisfaction for every
+// launched product that has customer state, deterministically for the round.
+func (s *Server) advanceCustomers(ctx context.Context, companyID string, seed int64, day int) {
+	if s.customers == nil || s.products == nil {
+		return
+	}
+	list, err := s.customers.ListByCompany(ctx, companyID)
+	if err != nil || len(list) == 0 {
+		return
+	}
+	launched := map[string]bool{}
+	products, _ := s.products.ListProductsByCompany(ctx, companyID)
+	for _, p := range products {
+		if p.Stage == repository.ProductLaunched {
+			launched[p.ID] = true
+		}
+	}
+	for _, c := range list {
+		if !launched[c.ProductID] {
+			continue
+		}
+		next := customers.Advance(customers.Product{
+			Total: c.Total, MAU: c.MAU, Churned: c.Churned, Satisfaction: c.Satisfaction,
+		}, seed, day)
+		if err := s.customers.Save(ctx, c.ProductID, next.Total, next.MAU, next.Churned, next.Satisfaction); err != nil {
+			s.log.Error("advance customers failed", "product", c.ProductID, "error", err)
 		}
 	}
 }

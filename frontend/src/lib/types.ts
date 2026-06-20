@@ -113,3 +113,13 @@ export type LaunchEvent = {
   initial_customers: number;
   launched_at: string;
 };
+
+export type CustomerState = {
+  product_id: string;
+  product_name: string;
+  total_customers: number;
+  mau: number;
+  churned: number;
+  satisfaction: number;
+  updated_at: string;
+};
