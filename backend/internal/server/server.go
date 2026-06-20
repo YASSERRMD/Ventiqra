@@ -28,6 +28,7 @@ type Server struct {
 	tokens    *auth.TokenManager
 	companies *repository.CompanyRepo
 	sim       *repository.SimStateRepo
+	products  *repository.ProductRepo
 }
 
 // HealthChecker is anything that can report its own health via Ping.
@@ -62,6 +63,11 @@ func WithCompany(companies *repository.CompanyRepo) Option {
 // WithSim enables the simulation service by providing a SimStateRepo.
 func WithSim(repo *repository.SimStateRepo) Option {
 	return func(s *Server) { s.sim = repo }
+}
+
+// WithProducts enables the product service by providing a ProductRepo.
+func WithProducts(products *repository.ProductRepo) Option {
+	return func(s *Server) { s.products = products }
 }
 
 // New constructs a Server with routes registered.
@@ -117,6 +123,13 @@ func (s *Server) registerRoutes() {
 	if s.tokens != nil && s.companies != nil && s.sim != nil {
 		s.mux.Handle("POST /api/v1/companies/me/sim/tick", s.protected(http.HandlerFunc(s.handleSimTick)))
 		s.mux.Handle("GET /api/v1/companies/me/metrics", s.protected(http.HandlerFunc(s.handleMetrics)))
+	}
+
+	if s.tokens != nil && s.companies != nil && s.products != nil {
+		s.mux.Handle("POST /api/v1/companies/me/products", s.protected(http.HandlerFunc(s.handleCreateProduct)))
+		s.mux.Handle("GET /api/v1/companies/me/products", s.protected(http.HandlerFunc(s.handleListProducts)))
+		s.mux.Handle("PATCH /api/v1/products/{id}/stage", s.protected(http.HandlerFunc(s.handleUpdateProductStage)))
+		s.mux.Handle("PATCH /api/v1/products/{id}/progress", s.protected(http.HandlerFunc(s.handleUpdateProductProgress)))
 	}
 }
 
