@@ -145,6 +145,11 @@ func (s *Server) registerRoutes() {
 		s.mux.Handle("PATCH /api/v1/employees/{id}/morale", s.protected(http.HandlerFunc(s.handleUpdateEmployeeMorale)))
 		s.mux.Handle("DELETE /api/v1/employees/{id}", s.protected(http.HandlerFunc(s.handleDeleteEmployee)))
 	}
+
+	if s.tokens != nil && s.companies != nil && s.employees != nil {
+		s.mux.Handle("GET /api/v1/companies/me/candidates", s.protected(http.HandlerFunc(s.handleListCandidates)))
+		s.mux.Handle("POST /api/v1/companies/me/candidates/{index}/hire", s.protected(http.HandlerFunc(s.handleHireCandidate)))
+	}
 }
 
 // protected wraps a handler with the JWT AuthRequired middleware.

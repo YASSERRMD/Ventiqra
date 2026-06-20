@@ -76,3 +76,25 @@ export type EmployeeCreate = {
   skill?: number;
   morale?: number;
 };
+
+export type Candidate = {
+  index: number;
+  role: EmployeeRole;
+  name: string;
+  quality: "weak" | "average" | "strong";
+  skill: number;
+  salary_expectation_cents: number;
+  hiring_fee_cents: number;
+  acceptance_chance: number;
+};
+
+export type CandidatePool = {
+  day: number;
+  candidates: Candidate[];
+};
+
+export type HireResult = {
+  accepted: boolean;
+  message: string;
+  employee?: Employee;
+};
