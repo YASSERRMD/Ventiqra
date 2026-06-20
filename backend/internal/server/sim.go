@@ -1,9 +1,11 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"net/http"
 
+	"github.com/YASSERRMD/Ventiqra/backend/internal/develop"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/middleware"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/repository"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/sim"
@@ -64,6 +66,16 @@ func (s *Server) handleSimTick(w http.ResponseWriter, r *http.Request) {
 		Seed:        state.Seed,
 		Rand:        sim.NewRand(state.Seed, state.Day),
 	}
+
+	// Apply employee-driven effects for the day: payroll raises burn and builders
+	// advance any in-progress products. Both are nil-guarded so the simulation
+	// still works before the employee/product services are configured.
+	roster, salaries := s.loadRoster(r.Context(), company.ID)
+	if len(roster) > 0 {
+		simState.MonthlyBurn = sim.BaseMonthlyBurnCents + develop.MonthlyPayroll(salaries)
+		s.advanceBuildingProducts(r.Context(), company.ID, develop.DailyProgress(roster))
+	}
+
 	engine.Tick(simState)
 
 	if err := s.sim.Save(r.Context(), company.ID, simState.Day, simState.Cash, simState.Revenue, simState.MonthlyBurn); err != nil {
@@ -84,4 +96,48 @@ func (s *Server) handleSimTick(w http.ResponseWriter, r *http.Request) {
 		Seed:      simState.Seed,
 		CashCents: simState.Cash,
 	})
+}
+
+// loadRoster returns the company's employees as develop inputs together with
+// their monthly salaries (cents). Both slices are nil when the employee service
+// is not configured or the company has no team yet.
+func (s *Server) loadRoster(ctx context.Context, companyID string) ([]develop.Employee, []int64) {
+	if s.employees == nil {
+		return nil, nil
+	}
+	team, err := s.employees.ListEmployeesByCompany(ctx, companyID)
+	if err != nil || len(team) == 0 {
+		return nil, nil
+	}
+	roster := make([]develop.Employee, 0, len(team))
+	salaries := make([]int64, 0, len(team))
+	for _, e := range team {
+		roster = append(roster, develop.Employee{Role: string(e.Role), Skill: e.Skill, Morale: e.Morale})
+		salaries = append(salaries, e.SalaryCents)
+	}
+	return roster, salaries
+}
+
+// advanceBuildingProducts adds one day's worth of development progress to every
+// product currently in the 'building' stage, persisting the clamped result.
+func (s *Server) advanceBuildingProducts(ctx context.Context, companyID string, daily float64) {
+	if s.products == nil || daily <= 0 {
+		return
+	}
+	products, err := s.products.ListProductsByCompany(ctx, companyID)
+	if err != nil {
+		return
+	}
+	for _, p := range products {
+		if p.Stage != repository.ProductBuilding {
+			continue
+		}
+		next := p.DevProgress + daily
+		if next > 100 {
+			next = 100
+		}
+		if err := s.products.UpdateProgress(ctx, p.ID, next); err != nil {
+			s.log.Error("advance product progress failed", "product", p.ID, "error", err)
+		}
+	}
 }
