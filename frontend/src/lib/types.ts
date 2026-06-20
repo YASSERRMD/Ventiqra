@@ -123,3 +123,13 @@ export type CustomerState = {
   satisfaction: number;
   updated_at: string;
 };
+
+export type PricingExperiment = {
+  id: string;
+  product_id: string;
+  product_name: string;
+  old_price_cents: number | null;
+  new_price_cents: number;
+  sim_day: number;
+  created_at: string;
+};
