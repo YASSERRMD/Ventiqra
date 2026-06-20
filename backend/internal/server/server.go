@@ -29,6 +29,7 @@ type Server struct {
 	companies *repository.CompanyRepo
 	sim       *repository.SimStateRepo
 	products  *repository.ProductRepo
+	employees *repository.EmployeeRepo
 }
 
 // HealthChecker is anything that can report its own health via Ping.
@@ -68,6 +69,11 @@ func WithSim(repo *repository.SimStateRepo) Option {
 // WithProducts enables the product service by providing a ProductRepo.
 func WithProducts(products *repository.ProductRepo) Option {
 	return func(s *Server) { s.products = products }
+}
+
+// WithEmployees enables the employee service by providing an EmployeeRepo.
+func WithEmployees(employees *repository.EmployeeRepo) Option {
+	return func(s *Server) { s.employees = employees }
 }
 
 // New constructs a Server with routes registered.
@@ -130,6 +136,14 @@ func (s *Server) registerRoutes() {
 		s.mux.Handle("GET /api/v1/companies/me/products", s.protected(http.HandlerFunc(s.handleListProducts)))
 		s.mux.Handle("PATCH /api/v1/products/{id}/stage", s.protected(http.HandlerFunc(s.handleUpdateProductStage)))
 		s.mux.Handle("PATCH /api/v1/products/{id}/progress", s.protected(http.HandlerFunc(s.handleUpdateProductProgress)))
+	}
+
+	if s.tokens != nil && s.companies != nil && s.employees != nil {
+		s.mux.Handle("POST /api/v1/companies/me/employees", s.protected(http.HandlerFunc(s.handleCreateEmployee)))
+		s.mux.Handle("GET /api/v1/companies/me/employees", s.protected(http.HandlerFunc(s.handleListEmployees)))
+		s.mux.Handle("PATCH /api/v1/employees/{id}/salary", s.protected(http.HandlerFunc(s.handleUpdateEmployeeSalary)))
+		s.mux.Handle("PATCH /api/v1/employees/{id}/morale", s.protected(http.HandlerFunc(s.handleUpdateEmployeeMorale)))
+		s.mux.Handle("DELETE /api/v1/employees/{id}", s.protected(http.HandlerFunc(s.handleDeleteEmployee)))
 	}
 }
 

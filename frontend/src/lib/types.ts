@@ -39,3 +39,40 @@ export type Product = {
   created_at: string;
   updated_at: string;
 };
+
+export type EmployeeRole =
+  | "engineer"
+  | "designer"
+  | "sales"
+  | "marketing"
+  | "support"
+  | "operations";
+
+export const EMPLOYEE_ROLES: EmployeeRole[] = [
+  "engineer",
+  "designer",
+  "sales",
+  "marketing",
+  "support",
+  "operations",
+];
+
+export type Employee = {
+  id: string;
+  name: string;
+  role: EmployeeRole;
+  salary_cents: number;
+  skill: number;
+  morale: number;
+  hired_at: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type EmployeeCreate = {
+  name: string;
+  role: EmployeeRole;
+  salary_cents?: number;
+  skill?: number;
+  morale?: number;
+};
