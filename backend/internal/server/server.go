@@ -32,6 +32,7 @@ type Server struct {
 	employees *repository.EmployeeRepo
 	launches  *repository.LaunchRepo
 	customers *repository.CustomerRepo
+	pricing   *repository.PricingRepo
 }
 
 // HealthChecker is anything that can report its own health via Ping.
@@ -86,6 +87,11 @@ func WithLaunches(launches *repository.LaunchRepo) Option {
 // WithCustomers enables the customer service by providing a CustomerRepo.
 func WithCustomers(customers *repository.CustomerRepo) Option {
 	return func(s *Server) { s.customers = customers }
+}
+
+// WithPricing enables the pricing service by providing a PricingRepo.
+func WithPricing(pricing *repository.PricingRepo) Option {
+	return func(s *Server) { s.pricing = pricing }
 }
 
 // New constructs a Server with routes registered.
@@ -170,6 +176,11 @@ func (s *Server) registerRoutes() {
 
 	if s.tokens != nil && s.companies != nil && s.customers != nil {
 		s.mux.Handle("GET /api/v1/companies/me/customers", s.protected(http.HandlerFunc(s.handleListCustomers)))
+	}
+
+	if s.tokens != nil && s.companies != nil && s.products != nil && s.pricing != nil {
+		s.mux.Handle("PATCH /api/v1/products/{id}/price", s.protected(http.HandlerFunc(s.handleSetProductPrice)))
+		s.mux.Handle("GET /api/v1/companies/me/pricing-experiments", s.protected(http.HandlerFunc(s.handleListPricingExperiments)))
 	}
 }
 

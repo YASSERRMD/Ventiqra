@@ -5,7 +5,7 @@ import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import { getToken, clearToken } from "@/lib/auth";
 import { formatCents } from "@/lib/format";
-import type { Product, ProductStage, LaunchResult, LaunchEvent, CustomerState } from "@/lib/types";
+import type { Product, ProductStage, LaunchResult, LaunchEvent, CustomerState, PricingExperiment } from "@/lib/types";
 import { PageHeader } from "@/components/layout/page-header";
 
 type State =
@@ -151,6 +151,7 @@ export default function ProductsPage() {
       )}
       <LaunchHistory />
       <CustomerOverview />
+      <PricingExperiments />
     </div>
   );
 }
@@ -262,12 +263,7 @@ function ProductCard({
         </div>
       </div>
 
-      <div className="text-sm text-muted">
-        Price:{" "}
-        <span className="text-foreground">
-          {product.price_cents != null ? formatCents(product.price_cents) : "—"}
-        </span>
-      </div>
+      <PriceControl productId={product.id} initial={product.price_cents} onChanged={onChanged} />
 
       {nextStage ? (
         <button
@@ -407,6 +403,127 @@ function LaunchHistory() {
                     <p>Readiness <span className="text-foreground">{e.readiness.toFixed(0)}%</span></p>
                     <p>
                       <span className="text-foreground">{e.initial_customers}</span> initial customers
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function PriceControl({
+  productId,
+  initial,
+  onChanged,
+}: {
+  productId: string;
+  initial: number | null;
+  onChanged: () => void;
+}) {
+  const [price, setPrice] = useState(initial != null ? String(initial) : "");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function save() {
+    const token = getToken();
+    if (!token) {
+      setError("You are no longer logged in.");
+      return;
+    }
+    const cents = Math.max(0, Math.round(Number(price) || 0));
+    setBusy(true);
+    setError(null);
+    try {
+      await api.patch(`/api/v1/products/${productId}/price`, { price_cents: cents }, { token });
+      setPrice(String(cents));
+      onChanged();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not set price.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="flex items-end gap-2">
+      <label className="flex flex-1 flex-col gap-1 text-xs text-muted">
+        <span>Price (cents/mo)</span>
+        <input
+          className="rounded-md border border-border bg-background px-2 py-1.5 text-sm text-foreground outline-none focus:border-brand"
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
+          placeholder="0"
+          inputMode="numeric"
+        />
+      </label>
+      <button
+        type="button"
+        onClick={save}
+        disabled={busy}
+        className="rounded-md border border-border bg-background px-3 py-1.5 text-xs font-semibold text-foreground outline-none transition hover:border-brand disabled:opacity-60"
+      >
+        {busy ? "Saving…" : "Set price"}
+      </button>
+      {error && <p className="text-xs text-rose-400">{error}</p>}
+    </div>
+  );
+}
+
+function PricingExperiments() {
+  const [experiments, setExperiments] = useState<PricingExperiment[] | null>(null);
+  const [open, setOpen] = useState(false);
+
+  async function toggle() {
+    const next = !open;
+    setOpen(next);
+    if (next && experiments === null) {
+      const token = getToken();
+      if (!token) {
+        setExperiments([]);
+        return;
+      }
+      try {
+        const list = await api.get<PricingExperiment[]>("/api/v1/companies/me/pricing-experiments", { token });
+        setExperiments(list);
+      } catch {
+        setExperiments([]);
+      }
+    }
+  }
+
+  return (
+    <section className="mt-8">
+      <button
+        type="button"
+        onClick={toggle}
+        className="text-sm font-medium text-brand hover:underline"
+      >
+        {open ? "Hide" : "Show"} pricing experiments
+      </button>
+      {open && (
+        <div className="mt-3">
+          {experiments === null ? (
+            <p className="text-sm text-muted">Loading…</p>
+          ) : experiments.length === 0 ? (
+            <p className="text-sm text-muted">No pricing changes yet.</p>
+          ) : (
+            <ul className="divide-y divide-border rounded-xl border border-border bg-surface">
+              {experiments.map((e) => (
+                <li key={e.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{e.product_name}</p>
+                    <p className="text-xs text-muted">Day {e.sim_day}</p>
+                  </div>
+                  <div className="text-right text-xs text-muted">
+                    <p>
+                      <span className="text-foreground">
+                        {e.old_price_cents != null ? formatCents(e.old_price_cents) : "—"}
+                      </span>{" "}
+                      → <span className="text-foreground">{formatCents(e.new_price_cents)}</span>
                     </p>
                   </div>
                 </li>

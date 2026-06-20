@@ -8,10 +8,20 @@ import (
 func TestAcquisitionScalesWithSatisfaction(t *testing.T) {
 	rLow := rand.New(rand.NewPCG(1, 1))
 	rHigh := rand.New(rand.NewPCG(1, 1))
-	low := Acquisition(20, rLow)
-	high := Acquisition(90, rHigh)
+	low := Acquisition(20, 1.0, rLow)
+	high := Acquisition(90, 1.0, rHigh)
 	if high <= low {
 		t.Errorf("higher satisfaction should acquire more: %d vs %d", high, low)
+	}
+}
+
+func TestAcquisitionScalesWithDemand(t *testing.T) {
+	rA := rand.New(rand.NewPCG(1, 1))
+	rB := rand.New(rand.NewPCG(1, 1))
+	normal := Acquisition(80, 1.0, rA)
+	boosted := Acquisition(80, 2.0, rB)
+	if boosted <= normal {
+		t.Errorf("higher demand multiplier should acquire more: %d vs %d", boosted, normal)
 	}
 }
 
@@ -79,8 +89,8 @@ func TestSatisfactionDriftClamped(t *testing.T) {
 
 func TestAdvanceDeterministic(t *testing.T) {
 	p := Product{Total: 500, MAU: 400, Churned: 10, Satisfaction: 75}
-	a := Advance(p, 42, 1)
-	b := Advance(p, 42, 1)
+	a := Advance(p, 42, 1, 1.0)
+	b := Advance(p, 42, 1, 1.0)
 	if a != b {
 		t.Errorf("Advance not deterministic: %+v vs %+v", a, b)
 	}
@@ -88,7 +98,7 @@ func TestAdvanceDeterministic(t *testing.T) {
 
 func TestAdvanceAppliesAcquisitionAndChurn(t *testing.T) {
 	p := Product{Total: 1000, MAU: 800, Churned: 0, Satisfaction: 90}
-	out := Advance(p, 7, 1)
+	out := Advance(p, 7, 1, 1.0)
 	// With high satisfaction, net should generally grow (acquisition > churn).
 	if out.Total <= 0 {
 		t.Errorf("total = %d, want > 0", out.Total)
@@ -103,7 +113,7 @@ func TestAdvanceAppliesAcquisitionAndChurn(t *testing.T) {
 
 func TestAdvanceTotalNeverNegative(t *testing.T) {
 	p := Product{Total: 0, MAU: 0, Churned: 100, Satisfaction: 0}
-	out := Advance(p, 3, 1)
+	out := Advance(p, 3, 1, 1.0)
 	if out.Total < 0 {
 		t.Errorf("total = %d, want >= 0", out.Total)
 	}

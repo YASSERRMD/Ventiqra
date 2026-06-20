@@ -20,12 +20,15 @@ const (
 )
 
 // Acquisition returns the deterministic new customers gained in one day. Growth
-// scales with satisfaction: happier customers drive more word-of-mouth.
-func Acquisition(satisfaction int, r *rand.Rand) int {
+// scales with satisfaction and is scaled by demandMul (e.g. from pricing).
+func Acquisition(satisfaction int, demandMul float64, r *rand.Rand) int {
+	if demandMul < 0 {
+		demandMul = 0
+	}
 	sat := clamp(satisfaction, 0, 100)
 	base := float64(sat) / 10.0 // satisfaction 80 → ~8/day baseline
 	jitter := r.Float64() * 3
-	n := int(base + jitter)
+	n := int((base + jitter) * demandMul)
 	if n < 0 {
 		return 0
 	}
@@ -74,10 +77,10 @@ func SatisfactionDrift(satisfaction int, r *rand.Rand) int {
 
 // Advance applies one simulated day of acquisition, churn, satisfaction drift,
 // and MAU recompute to a product's customer state, deterministically for the
-// given (seed, day) round.
-func Advance(p Product, seed int64, day int) Product {
+// given (seed, day) round. demandMul (from pricing) scales acquisition.
+func Advance(p Product, seed int64, day int, demandMul float64) Product {
 	r := rand.New(rand.NewPCG(uint64(seed), uint64(day)^customerStreamSalt))
-	acq := Acquisition(p.Satisfaction, r)
+	acq := Acquisition(p.Satisfaction, demandMul, r)
 	lost := Churn(p.Total, p.Satisfaction, r)
 
 	total := p.Total + acq - lost
