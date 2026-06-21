@@ -193,3 +193,10 @@ export type Competitor = {
   last_launch_day: number;
   updated_at: string;
 };
+
+export type Market = {
+  tam: number;
+  growth_rate: number;
+  trend_multiplier: number;
+  updated_at: string;
+};
