@@ -37,6 +37,7 @@ type Server struct {
 	funding   *repository.FundingRepo
 	offers    *repository.OfferRepo
 	competitors *repository.CompetitorRepo
+	market      *repository.MarketRepo
 }
 
 // HealthChecker is anything that can report its own health via Ping.
@@ -116,6 +117,11 @@ func WithOffers(offers *repository.OfferRepo) Option {
 // WithCompetitors enables the competitor service by providing a CompetitorRepo.
 func WithCompetitors(competitors *repository.CompetitorRepo) Option {
 	return func(s *Server) { s.competitors = competitors }
+}
+
+// WithMarket enables the market service by providing a MarketRepo.
+func WithMarket(market *repository.MarketRepo) Option {
+	return func(s *Server) { s.market = market }
 }
 
 // New constructs a Server with routes registered.
@@ -230,6 +236,10 @@ func (s *Server) registerRoutes() {
 
 	if s.tokens != nil && s.companies != nil && s.competitors != nil {
 		s.mux.Handle("GET /api/v1/companies/me/competitors", s.protected(http.HandlerFunc(s.handleListCompetitors)))
+	}
+
+	if s.tokens != nil && s.companies != nil && s.market != nil {
+		s.mux.Handle("GET /api/v1/companies/me/market", s.protected(http.HandlerFunc(s.handleGetMarket)))
 	}
 }
 

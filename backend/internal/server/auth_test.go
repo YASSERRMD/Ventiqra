@@ -60,6 +60,7 @@ func newAuthTestServer(t *testing.T) *Server {
 		WithFunding(repository.NewFundingRepo(base)),
 		WithOffers(repository.NewOfferRepo(base)),
 		WithCompetitors(repository.NewCompetitorRepo(base)),
+		WithMarket(repository.NewMarketRepo(base)),
 	)
 }
 
