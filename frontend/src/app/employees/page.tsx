@@ -5,7 +5,7 @@ import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import { getToken, clearToken } from "@/lib/auth";
 import { formatCents } from "@/lib/format";
-import type { Employee, EmployeeCreate, EmployeeRole, Candidate } from "@/lib/types";
+import type { Employee, EmployeeCreate, EmployeeRole, Candidate, MoraleSummary } from "@/lib/types";
 import { EMPLOYEE_ROLES } from "@/lib/types";
 import { PageHeader } from "@/components/layout/page-header";
 
@@ -119,6 +119,7 @@ export default function EmployeesPage() {
         }
       />
       <HireEmployee onHired={refresh} />
+      <MoralePanel />
       <HiringMarket onChanged={refresh} />
       {state.employees.length === 0 ? (
         <div className="mt-6 rounded-xl border border-dashed border-border bg-surface/40 px-6 py-12 text-center">
@@ -363,6 +364,53 @@ const QUALITY_TONE: Record<Candidate["quality"], string> = {
   average: "bg-amber-500/15 text-amber-300",
   strong: "bg-emerald-500/15 text-emerald-300",
 };
+
+function MoralePanel() {
+  const [m, setM] = useState<MoraleSummary | null>(null);
+
+  useEffect(() => {
+    const token = getToken();
+    if (!token) return;
+    api
+      .get<MoraleSummary>("/api/v1/companies/me/morale", { token })
+      .then(setM)
+      .catch(() => setM(null));
+  }, []);
+
+  if (!m || m.headcount === 0) return null;
+  const avg = Math.max(0, Math.min(100, m.average_morale));
+  const tone = avg >= 60 ? "text-emerald-400" : avg >= 40 ? "text-amber-400" : "text-rose-400";
+  return (
+    <section className="mt-6 rounded-xl border border-border bg-surface p-4">
+      <div className="flex items-baseline justify-between">
+        <h3 className="text-sm font-semibold text-foreground">Team morale</h3>
+        <span className={`text-sm font-semibold ${tone}`}>{avg}/100</span>
+      </div>
+      <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-background">
+        <div className="h-full rounded-full bg-brand" style={{ width: `${avg}%` }} />
+      </div>
+      <div className="mt-3 grid grid-cols-3 gap-3 text-center text-xs">
+        <div>
+          <p className="text-muted">Headcount</p>
+          <p className="mt-1 text-base font-semibold text-foreground">{m.headcount}</p>
+        </div>
+        <div>
+          <p className="text-muted">At risk</p>
+          <p className="mt-1 text-base font-semibold text-amber-400">{m.at_risk}</p>
+        </div>
+        <div>
+          <p className="text-muted">Burnt out</p>
+          <p className="mt-1 text-base font-semibold text-rose-400">{m.burnt_out}</p>
+        </div>
+      </div>
+      {m.burnt_out > 0 && (
+        <p className="mt-2 text-xs text-rose-400">
+          Burnt-out employees may resign. Boost morale via launches and funding.
+        </p>
+      )}
+    </section>
+  );
+}
 
 function HiringMarket({ onChanged }: { onChanged: () => void }) {
   const [candidates, setCandidates] = useState<Candidate[] | null>(null);

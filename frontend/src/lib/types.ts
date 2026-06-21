@@ -228,3 +228,10 @@ export type Reputation = {
   growth_multiplier: number;
   events: ReputationEvent[];
 };
+
+export type MoraleSummary = {
+  headcount: number;
+  average_morale: number;
+  at_risk: number;
+  burnt_out: number;
+};
