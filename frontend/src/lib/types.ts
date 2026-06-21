@@ -200,3 +200,17 @@ export type Market = {
   trend_multiplier: number;
   updated_at: string;
 };
+
+export type MarketingChannel = {
+  name: string;
+  weight: number;
+  conversion: number;
+};
+
+export type Marketing = {
+  monthly_budget_cents: number;
+  daily_conversions: number;
+  cac_cents: number;
+  conversion_rate: number;
+  channels: MarketingChannel[];
+};
