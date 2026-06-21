@@ -75,6 +75,7 @@ func run() error {
 			server.WithCustomers(repository.NewCustomerRepo(baseRepo)),
 			server.WithPricing(repository.NewPricingRepo(baseRepo)),
 			server.WithFinance(repository.NewFinanceRepo(baseRepo)),
+			server.WithFunding(repository.NewFundingRepo(baseRepo)),
 		)
 		log.Info("auth, company, simulation, product, employee, launch, customer, pricing, and finance services enabled")
 	}
