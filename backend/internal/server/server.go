@@ -43,6 +43,7 @@ type Server struct {
 	decisions   *repository.DecisionRepo
 	customScenarios *repository.CustomScenarioRepo
 	saveSlots   *repository.SaveSlotRepo
+	timeline    *repository.TimelineRepo
 }
 
 // HealthChecker is anything that can report its own health via Ping.
@@ -155,6 +156,11 @@ func WithCustomScenarios(repo *repository.CustomScenarioRepo) Option {
 // SaveSlotRepo.
 func WithSaveSlots(repo *repository.SaveSlotRepo) Option {
 	return func(s *Server) { s.saveSlots = repo }
+}
+
+// WithTimeline enables the timeline service by providing a TimelineRepo.
+func WithTimeline(repo *repository.TimelineRepo) Option {
+	return func(s *Server) { s.timeline = repo }
 }
 
 // New constructs a Server with routes registered.
@@ -312,6 +318,10 @@ func (s *Server) registerRoutes() {
 		s.mux.Handle("POST /api/v1/saves", s.protected(http.HandlerFunc(s.handleSaveSlot)))
 		s.mux.Handle("POST /api/v1/saves/{slot}/load", s.protected(http.HandlerFunc(s.handleLoadSlot)))
 		s.mux.Handle("DELETE /api/v1/saves/{slot}", s.protected(http.HandlerFunc(s.handleDeleteSlot)))
+	}
+
+	if s.tokens != nil && s.companies != nil && s.timeline != nil {
+		s.mux.Handle("GET /api/v1/companies/me/timeline", s.protected(http.HandlerFunc(s.handleGetTimeline)))
 	}
 }
 
