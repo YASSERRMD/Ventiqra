@@ -94,10 +94,36 @@ export function MetricsCards() {
 
   return (
     <div>
+      <HealthBanner metrics={m} />
       <MetricGrid cards={cards} />
       <p className="mt-3 text-xs text-muted/80">
         Simulated day {formatNumber(m.day)}
       </p>
+    </div>
+  );
+}
+
+const HEALTH_TONE: Record<string, string> = {
+  healthy: "border-emerald-500/40 bg-emerald-500/10 text-emerald-300",
+  warning: "border-amber-500/40 bg-amber-500/10 text-amber-300",
+  critical: "border-rose-500/40 bg-rose-500/10 text-rose-300",
+  bankrupt: "border-rose-500/60 bg-rose-500/20 text-rose-200",
+};
+
+const HEALTH_TEXT: Record<string, string> = {
+  healthy: "Company health looks stable.",
+  warning: "Runway is getting short — watch your burn.",
+  critical: "Critical runway — reduce burn or raise cash soon.",
+  bankrupt: "The company is bankrupt. Restart to play again.",
+};
+
+function HealthBanner({ metrics }: { metrics: Metrics }) {
+  const health = (metrics.health ?? "healthy").toLowerCase();
+  if (health === "healthy") return null;
+  return (
+    <div className={`mb-4 rounded-xl border px-4 py-3 text-sm ${HEALTH_TONE[health] ?? HEALTH_TONE.healthy}`}>
+      <span className="font-medium capitalize">{health}</span>
+      <span className="ml-2">{HEALTH_TEXT[health]}</span>
     </div>
   );
 }
