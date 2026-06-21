@@ -235,3 +235,15 @@ export type MoraleSummary = {
   at_risk: number;
   burnt_out: number;
 };
+
+export type GameEvent = {
+  id: string;
+  kind: "positive" | "negative" | "neutral";
+  title: string;
+  description: string;
+  cash_delta: number;
+  reputation_delta: number;
+  morale_delta: number;
+  sim_day: number;
+  created_at: string;
+};
