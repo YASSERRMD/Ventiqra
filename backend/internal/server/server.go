@@ -275,6 +275,13 @@ func (s *Server) registerRoutes() {
 		s.mux.Handle("GET /api/v1/companies/me/decisions/pending", s.protected(http.HandlerFunc(s.handleGetPendingDecision)))
 		s.mux.Handle("POST /api/v1/companies/me/decisions/{id}/resolve", s.protected(http.HandlerFunc(s.handleResolveDecision)))
 	}
+
+	if s.tokens != nil {
+		s.mux.Handle("GET /api/v1/scenarios", s.protected(http.HandlerFunc(s.handleListScenarios)))
+	}
+	if s.tokens != nil && s.companies != nil {
+		s.mux.Handle("POST /api/v1/scenarios/{id}/apply", s.protected(http.HandlerFunc(s.handleApplyScenario)))
+	}
 }
 
 // protected wraps a handler with the JWT AuthRequired middleware.
