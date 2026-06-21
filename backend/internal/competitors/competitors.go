@@ -54,13 +54,13 @@ func Advance(c Competitor, seed, day int64) Competitor {
 	}
 	share := c.MarketShare
 	// Launch event roughly every ~30 days: a strength and share jump.
-	if day-c.LastLaunchDay >= 30 && r.Float64() < 0.5 {
+	if int(day)-c.LastLaunchDay >= 30 && r.Float64() < 0.5 {
 		strength += 5
 		if strength > 100 {
 			strength = 100
 		}
 		share += 0.02
-		c.LastLaunchDay = day
+		c.LastLaunchDay = int(day)
 	}
 	if share > 0.9 {
 		share = 0.9
