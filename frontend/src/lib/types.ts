@@ -214,3 +214,17 @@ export type Marketing = {
   conversion_rate: number;
   channels: MarketingChannel[];
 };
+
+export type ReputationEvent = {
+  id: string;
+  event: string;
+  delta: number;
+  sim_day: number;
+  created_at: string;
+};
+
+export type Reputation = {
+  score: number;
+  growth_multiplier: number;
+  events: ReputationEvent[];
+};
