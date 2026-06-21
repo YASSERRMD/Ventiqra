@@ -184,3 +184,12 @@ export type NegotiateResult = {
   message: string;
   offer?: InvestorOffer;
 };
+
+export type Competitor = {
+  id: string;
+  name: string;
+  strength: number;
+  market_share: number;
+  last_launch_day: number;
+  updated_at: string;
+};
