@@ -348,3 +348,28 @@ export type LoadResult = {
   day: number;
   loaded_at: string;
 };
+
+export type TimelineEntry = {
+  id: string;
+  kind: string;
+  title: string;
+  description: string;
+  sim_day: number;
+  created_at: string;
+};
+
+export type MonthlySummary = {
+  month: number;
+  start_day: number;
+  end_day: number;
+  cash_change: number;
+  revenue_end: number;
+  burn_end: number;
+  events_count: number;
+};
+
+export type Timeline = {
+  day: number;
+  entries: TimelineEntry[];
+  monthly_summary: MonthlySummary[];
+};
