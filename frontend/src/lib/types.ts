@@ -331,3 +331,20 @@ export type CustomScenarioInput = {
   market_growth_rate: number;
   market_trend: number;
 };
+
+export type SaveSlot = {
+  id: string;
+  slot: string;
+  label: string;
+  day: number;
+  cash_cents: number;
+  status: string;
+  updated_at: string;
+};
+
+export type LoadResult = {
+  slot: string;
+  company: Company;
+  day: number;
+  loaded_at: string;
+};
