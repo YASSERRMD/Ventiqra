@@ -169,3 +169,18 @@ export type FundingSummary = {
   rounds_raised: number;
   rounds: FundingRound[];
 };
+
+export type InvestorOffer = {
+  id: string;
+  investor_name: string;
+  amount_cents: number;
+  equity_percent: number;
+  status: string;
+  created_at: string;
+};
+
+export type NegotiateResult = {
+  withdrawn: boolean;
+  message: string;
+  offer?: InvestorOffer;
+};
