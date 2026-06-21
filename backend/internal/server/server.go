@@ -40,6 +40,7 @@ type Server struct {
 	market      *repository.MarketRepo
 	reputation  *repository.ReputationRepo
 	gameEvents  *repository.GameEventRepo
+	decisions   *repository.DecisionRepo
 }
 
 // HealthChecker is anything that can report its own health via Ping.
@@ -134,6 +135,12 @@ func WithReputation(reputation *repository.ReputationRepo) Option {
 // WithGameEvents enables the random-event service by providing a GameEventRepo.
 func WithGameEvents(gameEvents *repository.GameEventRepo) Option {
 	return func(s *Server) { s.gameEvents = gameEvents }
+}
+
+// WithDecisions enables the strategic-decision service by providing a
+// DecisionRepo.
+func WithDecisions(decisions *repository.DecisionRepo) Option {
+	return func(s *Server) { s.decisions = decisions }
 }
 
 // New constructs a Server with routes registered.
@@ -262,6 +269,11 @@ func (s *Server) registerRoutes() {
 
 	if s.tokens != nil && s.companies != nil && s.gameEvents != nil {
 		s.mux.Handle("GET /api/v1/companies/me/events", s.protected(http.HandlerFunc(s.handleListEvents)))
+	}
+
+	if s.tokens != nil && s.companies != nil && s.decisions != nil {
+		s.mux.Handle("GET /api/v1/companies/me/decisions/pending", s.protected(http.HandlerFunc(s.handleGetPendingDecision)))
+		s.mux.Handle("POST /api/v1/companies/me/decisions/{id}/resolve", s.protected(http.HandlerFunc(s.handleResolveDecision)))
 	}
 }
 

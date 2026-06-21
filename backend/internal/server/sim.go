@@ -122,6 +122,11 @@ func (s *Server) handleSimTick(w http.ResponseWriter, r *http.Request) {
 	// Roll for a daily random event; apply its effects if one fires.
 	simState.Cash = s.rollAndApplyEvent(r.Context(), company.ID, simState.Cash, state.Seed, simState.Day)
 
+	// Apply any active long-term decision commitments for the day, then offer a
+	// fresh decision card on the cadence if none is pending.
+	s.applyActiveDecisionEffects(r.Context(), company.ID, &simState.Cash, simState.Day)
+	s.maybeOfferDecision(r.Context(), company.ID, state.Seed, simState.Day)
+
 	if err := s.sim.Save(r.Context(), company.ID, simState.Day, simState.Cash, simState.Revenue, simState.MonthlyBurn); err != nil {
 		s.log.Error("sim tick: save state failed", "error", err)
 		writeError(w, http.StatusInternalServerError, "could not save simulation state")

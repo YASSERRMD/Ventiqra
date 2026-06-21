@@ -6,6 +6,7 @@ import { MarketPanel } from "@/components/dashboard/market-panel";
 import { MarketingPanel } from "@/components/dashboard/marketing-panel";
 import { ReputationPanel } from "@/components/dashboard/reputation-panel";
 import { EventsPanel } from "@/components/dashboard/events-panel";
+import { DecisionModal } from "@/components/dashboard/decision-modal";
 
 export default function DashboardPage() {
   return (
@@ -22,6 +23,7 @@ export default function DashboardPage() {
       <ReputationPanel />
       <CompetitorPanel />
       <EventsPanel />
+      <DecisionModal />
     </div>
   );
 }
