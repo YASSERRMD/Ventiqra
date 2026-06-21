@@ -72,6 +72,9 @@ func (s *Server) handleLaunchProduct(w http.ResponseWriter, r *http.Request) {
 		s.log.Error("set launched stage failed", "error", err)
 	}
 
+	// Launching is a reputation milestone.
+	s.recordReputationEvent(r.Context(), companyID, "launched "+product.Name, 3, s.currentSimDay(r.Context(), companyID))
+
 	// Seed the product's customer state from the launch (initial customers +
 	// readiness-derived satisfaction). Idempotent if a state already exists.
 	if s.customers != nil {

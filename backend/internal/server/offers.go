@@ -187,6 +187,9 @@ func (s *Server) handleAcceptOffer(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = s.offers.UpdateStatus(r.Context(), offer.ID, repository.OfferAccepted)
 
+	// Closing a round via an accepted offer is a reputation milestone.
+	s.recordReputationEvent(r.Context(), company.ID, "accepted "+offer.InvestorName+" offer", 2, day)
+
 	// Reject remaining pending offers (only one round closes at a time).
 	if pending, err := s.offers.ListPendingByCompany(r.Context(), company.ID); err == nil {
 		for _, p := range pending {
