@@ -20,6 +20,7 @@ engine. The LLM is only used here as a coding assistant to build it.
 - **Funding rounds** — pitch investors, negotiate equity, and manage dilution.
 - **Competitors** — react to rival product launches and market-share shifts.
 - **Market events** — survive random booms, crises, and trend shifts.
+- **Strategic decisions** — weigh risk/reward decision cards with short- and long-term effects.
 - **Pricing experiments** — A/B price sensitivity and revenue impact.
 - **Customer growth** — acquisition, churn, satisfaction, and MAU.
 - **Dashboard** — live metrics, charts, and timeline.
