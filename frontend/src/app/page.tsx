@@ -1,6 +1,7 @@
 import { PageHeader } from "@/components/layout/page-header";
 import { BackendStatus } from "@/components/dashboard/backend-status";
 import { MetricsCards } from "@/components/dashboard/metrics-cards";
+import { CompetitorPanel } from "@/components/dashboard/competitor-panel";
 
 export default function DashboardPage() {
   return (
@@ -12,6 +13,7 @@ export default function DashboardPage() {
       />
 
       <MetricsCards />
+      <CompetitorPanel />
     </div>
   );
 }
