@@ -25,6 +25,8 @@ export type Metrics = {
   valuation_cents: number;
   runway_months: number;
   day: number;
+  health?: string;
+  status?: string;
 };
 
 export type ProductStage = "idea" | "building" | "launched" | "retired";

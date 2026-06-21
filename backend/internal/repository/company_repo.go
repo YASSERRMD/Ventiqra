@@ -145,6 +145,19 @@ func (r *CompanyRepo) UpdateCash(ctx context.Context, id string, cash int64) err
 	return nil
 }
 
+// UpdateStatus sets the company's lifecycle status.
+func (r *CompanyRepo) UpdateStatus(ctx context.Context, id string, status CompanyStatus) error {
+	const q = `UPDATE companies SET status = $2 WHERE id = $1`
+	tag, err := r.pool.Exec(ctx, q, id, status)
+	if err != nil {
+		return fmt.Errorf("update status: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
 type companyScanner interface {
 	Scan(dest ...any) error
 }

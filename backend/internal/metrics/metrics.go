@@ -19,6 +19,38 @@ const MonthsPerYear int64 = 12
 // runway and serializes cleanly to JSON.
 const InfiniteRunway float64 = -1
 
+// Health thresholds (in months of runway) defining warning and critical states.
+const (
+	WarningRunwayMonths  = 6.0
+	CriticalRunwayMonths = 3.0
+)
+
+// Health status values reported alongside metrics and on the tick response.
+const (
+	HealthHealthy  = "healthy"
+	HealthWarning  = "warning"
+	HealthCritical = "critical"
+	HealthBankrupt = "bankrupt"
+)
+
+// Health derives a coarse status from cash and runway. Bankruptcy (negative
+// cash) always dominates; otherwise the runway bands drive warning/critical.
+func Health(cash int64, runwayMonths float64) string {
+	if cash < 0 {
+		return HealthBankrupt
+	}
+	if runwayMonths == InfiniteRunway {
+		return HealthHealthy
+	}
+	if runwayMonths <= CriticalRunwayMonths {
+		return HealthCritical
+	}
+	if runwayMonths <= WarningRunwayMonths {
+		return HealthWarning
+	}
+	return HealthHealthy
+}
+
 // Metrics is a derived snapshot of a company's financial position. All money
 // fields are expressed in cents to match the rest of the codebase.
 type Metrics struct {

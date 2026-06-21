@@ -154,6 +154,9 @@ func (s *Server) registerRoutes() {
 		s.mux.Handle("POST /api/v1/companies/me/sim/tick", s.protected(http.HandlerFunc(s.handleSimTick)))
 		s.mux.Handle("GET /api/v1/companies/me/metrics", s.protected(http.HandlerFunc(s.handleMetrics)))
 	}
+	if s.tokens != nil && s.companies != nil {
+		s.mux.Handle("POST /api/v1/companies/me/restart", s.protected(http.HandlerFunc(s.handleRestart)))
+	}
 
 	if s.tokens != nil && s.companies != nil && s.products != nil {
 		s.mux.Handle("POST /api/v1/companies/me/products", s.protected(http.HandlerFunc(s.handleCreateProduct)))
