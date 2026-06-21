@@ -219,6 +219,7 @@ func (s *Server) registerRoutes() {
 	if s.tokens != nil && s.companies != nil && s.finance != nil {
 		s.mux.Handle("GET /api/v1/companies/me/finance", s.protected(http.HandlerFunc(s.handleGetFinance)))
 		s.mux.Handle("PATCH /api/v1/companies/me/finance", s.protected(http.HandlerFunc(s.handleUpdateFinance)))
+		s.mux.Handle("GET /api/v1/companies/me/marketing", s.protected(http.HandlerFunc(s.handleGetMarketing)))
 	}
 
 	if s.tokens != nil && s.companies != nil && s.funding != nil {
