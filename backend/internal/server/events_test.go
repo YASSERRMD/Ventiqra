@@ -43,7 +43,7 @@ func TestEventsFireOverManyTicks(t *testing.T) {
 	}
 
 	// Every recorded event has a valid kind.
-	kinds := map[string]bool{"positive": true, "negative": true, "neutral": true}
+	kinds := map[string]bool{"positive": true, "negative": true, "neutral": true, "crisis": true}
 	for _, e := range list {
 		if !kinds[e.Kind] {
 			t.Errorf("event kind %q invalid", e.Kind)
@@ -56,6 +56,8 @@ func TestEventsFireOverManyTicks(t *testing.T) {
 
 func TestEventsRequireAuth(t *testing.T) {
 	srv := newAuthTestServer(t)
+	token := registerAndLogin(t, srv)
+	doJSON(t, srv, "POST", "/api/v1/companies", map[string]any{"name": "Co"}, token)
 	rec := doJSON(t, srv, "GET", "/api/v1/companies/me/events", nil, "")
 	if rec.Code != http.StatusUnauthorized {
 		t.Errorf("status = %d, want 401", rec.Code)

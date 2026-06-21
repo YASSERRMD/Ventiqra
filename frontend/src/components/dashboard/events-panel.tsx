@@ -6,16 +6,18 @@ import { getToken } from "@/lib/auth";
 import { formatCents } from "@/lib/format";
 import type { GameEvent } from "@/lib/types";
 
-const KIND_TONE: Record<GameEvent["kind"], string> = {
+const KIND_TONE: Record<string, string> = {
   positive: "border-emerald-500/40 bg-emerald-500/10",
   negative: "border-rose-500/40 bg-rose-500/10",
   neutral: "border-border bg-surface",
+  crisis: "border-rose-500/70 bg-rose-500/20",
 };
 
-const KIND_LABEL: Record<GameEvent["kind"], string> = {
+const KIND_LABEL: Record<string, string> = {
   positive: "text-emerald-400",
   negative: "text-rose-400",
   neutral: "text-muted",
+  crisis: "text-rose-300",
 };
 
 export function EventsPanel() {
