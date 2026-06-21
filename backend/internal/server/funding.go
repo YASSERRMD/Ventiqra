@@ -118,6 +118,9 @@ func (s *Server) handleRaiseFunding(w http.ResponseWriter, r *http.Request) {
 		s.log.Error("apply raise cash failed", "error", err)
 	}
 
+	// Closing a round is a reputation milestone.
+	s.recordReputationEvent(r.Context(), company.ID, "raised "+roundName, 2, day)
+
 	updated, _ := s.companies.GetCompany(r.Context(), company.ID)
 	summary := s.buildFundingSummary(r.Context(), updated)
 	summary.Rounds = append(summary.Rounds, fundingRoundResponse{

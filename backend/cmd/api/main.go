@@ -79,6 +79,7 @@ func run() error {
 			server.WithOffers(repository.NewOfferRepo(baseRepo)),
 			server.WithCompetitors(repository.NewCompetitorRepo(baseRepo)),
 			server.WithMarket(repository.NewMarketRepo(baseRepo)),
+			server.WithReputation(repository.NewReputationRepo(baseRepo)),
 		)
 		log.Info("auth, company, simulation, product, employee, launch, customer, pricing, and finance services enabled")
 	}
