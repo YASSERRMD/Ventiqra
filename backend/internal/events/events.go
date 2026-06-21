@@ -12,6 +12,7 @@ const (
 	Positive Kind = "positive"
 	Negative Kind = "negative"
 	Neutral  Kind = "neutral"
+	Crisis   Kind = "crisis"
 )
 
 // Event is a single declarative event the engine can fire.
@@ -46,27 +47,49 @@ var Catalog = []Event{
 // DailyChance is the probability an event fires on any given day.
 const DailyChance = 0.15
 
+// CrisisChance is the (much lower) probability a severe crisis fires on a given
+// day. A crisis preempts the regular event roll when it triggers.
+const CrisisChance = 0.02
+
+// CrisisCatalog holds the severe crisis events. Each carries large penalties.
+var CrisisCatalog = []Event{
+	{Kind: Crisis, Title: "Server outage", Description: "A prolonged outage took the product offline for hours.", CashDelta: -400_000, ReputationDelta: -8, MoraleDelta: -10, Weight: 3},
+	{Kind: Crisis, Title: "Bad PR scandal", Description: "A scandal drew intense negative coverage.", CashDelta: -250_000, ReputationDelta: -15, MoraleDelta: -8, Weight: 3},
+	{Kind: Crisis, Title: "Competitor attack", Description: "A rival launched an aggressive campaign targeting your customers.", CashDelta: -150_000, ReputationDelta: -5, MoraleDelta: -6, Weight: 4},
+	{Kind: Crisis, Title: "Funding collapse", Description: "A committed investor pulled out at the last minute.", CashDelta: -500_000, ReputationDelta: -4, MoraleDelta: -10, Weight: 2},
+	{Kind: Crisis, Title: "Employee resignation wave", Description: "Several key employees resigned in quick succession.", CashDelta: -100_000, ReputationDelta: -3, MoraleDelta: -20, Weight: 2},
+}
+
 // eventStreamSalt separates the event RNG stream.
 const eventStreamSalt uint64 = 4242424242424242
 
 // MaybeRoll deterministically decides whether an event fires on the given day
-// and, if so, which one. Returns the chosen event and true when one fires.
+// and, if so, which one. A crisis roll is checked first; if no crisis fires,
+// the regular daily roll decides. Returns the chosen event and true when fired.
 func MaybeRoll(seed, day int64) (Event, bool) {
 	r := rand.New(rand.NewPCG(uint64(seed)^eventStreamSalt, uint64(day)))
+	if r.Float64() < CrisisChance {
+		return pick(r, CrisisCatalog), true
+	}
 	if r.Float64() >= DailyChance {
 		return Event{}, false
 	}
+	return pick(r, Catalog), true
+}
+
+// pick makes a weighted deterministic selection from a catalog using r.
+func pick(r *rand.Rand, catalog []Event) Event {
 	total := 0
-	for _, e := range Catalog {
+	for _, e := range catalog {
 		total += e.Weight
 	}
-	pick := r.IntN(total)
+	p := r.IntN(total)
 	running := 0
-	for _, e := range Catalog {
+	for _, e := range catalog {
 		running += e.Weight
-		if pick < running {
-			return e, true
+		if p < running {
+			return e
 		}
 	}
-	return Catalog[len(Catalog)-1], true
+	return catalog[len(catalog)-1]
 }

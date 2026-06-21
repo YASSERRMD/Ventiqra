@@ -57,7 +57,7 @@ func TestMaybeRollVariesByDay(t *testing.T) {
 }
 
 func TestEventEffectsAreBounded(t *testing.T) {
-	for _, e := range Catalog {
+	for _, e := range append(append([]Event{}, Catalog...), CrisisCatalog...) {
 		// Negative/positive cash deltas should be sane magnitudes (not billions).
 		if e.CashDelta < -10_000_000 || e.CashDelta > 10_000_000 {
 			t.Errorf("event %+v has out-of-bounds cash delta", e)
@@ -65,5 +65,33 @@ func TestEventEffectsAreBounded(t *testing.T) {
 		if e.ReputationDelta < -50 || e.ReputationDelta > 50 {
 			t.Errorf("event %+v has out-of-bounds reputation delta", e)
 		}
+	}
+}
+
+func TestCrisisCatalogSevere(t *testing.T) {
+	if len(CrisisCatalog) < 5 {
+		t.Errorf("expected at least 5 crisis events, got %d", len(CrisisCatalog))
+	}
+	for _, e := range CrisisCatalog {
+		if e.Kind != Crisis {
+			t.Errorf("crisis event kind = %q, want crisis", e.Kind)
+		}
+		// Crises should hurt: at least one large negative effect.
+		severe := e.CashDelta <= -100_000 || e.ReputationDelta <= -5 || e.MoraleDelta <= -8
+		if !severe {
+			t.Errorf("crisis %+v not severe enough", e)
+		}
+	}
+}
+
+func TestCrisesCanFire(t *testing.T) {
+	titles := map[string]bool{}
+	for day := int64(0); day < 5000; day++ {
+		if ev, ok := MaybeRoll(11, day); ok && ev.Kind == Crisis {
+			titles[ev.Title] = true
+		}
+	}
+	if len(titles) == 0 {
+		t.Errorf("no crises fired over 5000 days")
 	}
 }

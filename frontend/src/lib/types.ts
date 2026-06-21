@@ -238,7 +238,7 @@ export type MoraleSummary = {
 
 export type GameEvent = {
   id: string;
-  kind: "positive" | "negative" | "neutral";
+  kind: "positive" | "negative" | "neutral" | "crisis";
   title: string;
   description: string;
   cash_delta: number;
