@@ -203,6 +203,7 @@ func (s *Server) registerRoutes() {
 	if s.tokens != nil && s.companies != nil && s.employees != nil {
 		s.mux.Handle("POST /api/v1/companies/me/employees", s.protected(http.HandlerFunc(s.handleCreateEmployee)))
 		s.mux.Handle("GET /api/v1/companies/me/employees", s.protected(http.HandlerFunc(s.handleListEmployees)))
+		s.mux.Handle("GET /api/v1/companies/me/morale", s.protected(http.HandlerFunc(s.handleGetMorale)))
 		s.mux.Handle("PATCH /api/v1/employees/{id}/salary", s.protected(http.HandlerFunc(s.handleUpdateEmployeeSalary)))
 		s.mux.Handle("PATCH /api/v1/employees/{id}/morale", s.protected(http.HandlerFunc(s.handleUpdateEmployeeMorale)))
 		s.mux.Handle("DELETE /api/v1/employees/{id}", s.protected(http.HandlerFunc(s.handleDeleteEmployee)))

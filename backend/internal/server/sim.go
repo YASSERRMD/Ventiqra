@@ -86,6 +86,9 @@ func (s *Server) handleSimTick(w http.ResponseWriter, r *http.Request) {
 		s.advanceBuildingProducts(r.Context(), company.ID, develop.DailyProgress(roster))
 	}
 
+	// Morale decays and burnt-out employees may resign.
+	s.advanceMorale(r.Context(), company.ID, state.Seed, state.Day+1)
+
 	// Rivals evolve and exert market pressure that dampens acquisition.
 	s.ensureCompetitors(r.Context(), company.ID)
 	pressure := s.advanceCompetitors(r.Context(), company.ID, state.Seed, state.Day+1)

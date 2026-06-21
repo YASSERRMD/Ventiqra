@@ -4,13 +4,13 @@ package morale
 
 import "math/rand/v2"
 
-// DecayFloor is the level morale decays toward naturally; below it, decay stops
-// (so morale stabilizes unless boosted or events move it).
-const DecayFloor = 25
+// DecayFloor is the equilibrium morale trends toward: routine work wears it
+// down to here, and events/boosts move it above or below.
+const DecayFloor = 50
 
 // BurnoutThreshold is the morale value at/below which an employee is considered
 // burned out (near-zero effective output and high resignation risk).
-const BurnoutThreshold = 20
+const BurnoutThreshold = 30
 
 // moraleStreamSalt separates the morale RNG stream.
 const moraleStreamSalt uint64 = 7777555533331111
