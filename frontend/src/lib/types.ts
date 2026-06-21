@@ -247,3 +247,38 @@ export type GameEvent = {
   sim_day: number;
   created_at: string;
 };
+
+export type DecisionChoice = {
+  id: string;
+  label: string;
+  description: string;
+  cash_delta: number;
+  reputation_delta: number;
+  morale_delta: number;
+  success_chance: number;
+  fail_cash_delta: number;
+  fail_reputation_delta: number;
+  fail_morale_delta: number;
+  recurring_cash_delta: number;
+  duration_days: number;
+};
+
+export type PendingDecision = {
+  id: string;
+  decision_id: string;
+  title: string;
+  description: string;
+  category: string;
+  sim_day_offered: number;
+  choices: DecisionChoice[];
+};
+
+export type DecisionOutcome = {
+  id: string;
+  outcome: "success" | "failure";
+  applied_cash_delta: number;
+  applied_reputation_delta: number;
+  applied_morale_delta: number;
+  recurring_cash_delta: number;
+  remaining_days: number;
+};
