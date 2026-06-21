@@ -85,10 +85,14 @@ func (s *Server) handleSimTick(w http.ResponseWriter, r *http.Request) {
 		s.advanceBuildingProducts(r.Context(), company.ID, develop.DailyProgress(roster))
 	}
 
+	// Rivals evolve and exert market pressure that dampens acquisition.
+	s.ensureCompetitors(r.Context(), company.ID)
+	pressure := s.advanceCompetitors(r.Context(), company.ID, state.Seed, state.Day+1)
+
 	// Advance customer dynamics (acquisition/churn/MAU/satisfaction) for every
 	// launched product, deterministically for the round. Pricing feeds demand and
 	// the daily revenue total feeds the engine.
-	dailyRevenue, totalCustomers := s.advanceCustomers(r.Context(), company.ID, state.Seed, state.Day+1)
+	dailyRevenue, totalCustomers := s.advanceCustomers(r.Context(), company.ID, state.Seed, state.Day+1, pressure)
 
 	// Compute the full monthly burn from the finance breakdown: base overhead,
 	// payroll, infrastructure (scaled by customers), and marketing budget.
@@ -178,9 +182,10 @@ func (s *Server) advanceBuildingProducts(ctx context.Context, companyID string, 
 
 // advanceCustomers advances acquisition/churn/MAU/satisfaction for every
 // launched product that has customer state, deterministically for the round.
-// Returns the total daily revenue (in cents) and the total customer count
-// across launched products, so the finance engine can compute burn/P&L.
-func (s *Server) advanceCustomers(ctx context.Context, companyID string, seed int64, day int) (int64, int) {
+// `pressure` (0..0.5) from competitors dampens acquisition demand. Returns the
+// total daily revenue (in cents) and the total customer count across launched
+// products, so the finance engine can compute burn/P&L.
+func (s *Server) advanceCustomers(ctx context.Context, companyID string, seed int64, day int, pressure float64) (int64, int) {
 	if s.customers == nil || s.products == nil {
 		return 0, 0
 	}
@@ -208,6 +213,9 @@ func (s *Server) advanceCustomers(ctx context.Context, companyID string, seed in
 			price = *p.PriceCents
 		}
 		demand := pricing.DemandMultiplier(price, pricing.BaselineMonthlyCents, pricing.DefaultElasticity)
+		if pressure > 0 {
+			demand *= (1 - pressure)
+		}
 		next := customers.Advance(customers.Product{
 			Total: c.Total, MAU: c.MAU, Churned: c.Churned, Satisfaction: c.Satisfaction,
 		}, seed, day, demand)
