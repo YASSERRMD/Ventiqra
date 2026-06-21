@@ -241,7 +241,8 @@ func (s *Server) handleNegotiateOffer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_, day := s.companyRoundKey(r, offer.CompanyID)
-	newEquity, withdrawn := funding.NegotiateOutcome(offer.RoundSeed, int64(day), offerIndexFromID(offer), offer.EquityPercent)
+	seed := offer.RoundSeed ^ int64(offerIDHash(offer.ID))
+	newEquity, withdrawn := funding.NegotiateOutcome(seed, int64(day), offerIndexFromID(offer), offer.EquityPercent)
 	if withdrawn {
 		_ = s.offers.UpdateStatus(r.Context(), offer.ID, repository.OfferWithdrawn)
 		writeJSON(w, http.StatusOK, negotiateResultResponse{
@@ -263,7 +264,13 @@ func (s *Server) handleNegotiateOffer(w http.ResponseWriter, r *http.Request) {
 // offerIndexFromID derives a stable index in [0, OfferCount) from the offer id,
 // so each offer's negotiation outcome is independently yet reproducibly decided.
 func offerIndexFromID(o *repository.InvestorOffer) int {
+	return int(offerIDHash(o.ID) % uint32(funding.OfferCount))
+}
+
+// offerIDHash returns a stable 32-bit hash of an offer id, used to derive a
+// per-offer deterministic negotiation seed.
+func offerIDHash(id string) uint32 {
 	h := fnv.New32a()
-	_, _ = h.Write([]byte(o.ID))
-	return int(h.Sum32() % uint32(funding.OfferCount))
+	_, _ = h.Write([]byte(id))
+	return h.Sum32()
 }
