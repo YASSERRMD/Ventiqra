@@ -8,6 +8,7 @@ import { getToken } from "@/lib/auth";
 import { formatCents } from "@/lib/format";
 import type { ApplyScenarioResult, Scenario } from "@/lib/types";
 import { PageHeader } from "@/components/layout/page-header";
+import { CustomScenarioEditor } from "@/components/dashboard/custom-scenario-editor";
 
 const DIFFICULTY_TONE: Record<Scenario["difficulty"], string> = {
   easy: "text-emerald-400 border-emerald-500/40",
@@ -144,6 +145,8 @@ export default function ScenariosPage() {
           })}
         </div>
       )}
+
+      <CustomScenarioEditor />
     </div>
   );
 }

@@ -64,6 +64,7 @@ func newAuthTestServer(t *testing.T) *Server {
 		WithReputation(repository.NewReputationRepo(base)),
 		WithGameEvents(repository.NewGameEventRepo(base)),
 		WithDecisions(repository.NewDecisionRepo(base)),
+		WithCustomScenarios(repository.NewCustomScenarioRepo(base)),
 	)
 }
 

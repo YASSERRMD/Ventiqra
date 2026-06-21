@@ -306,3 +306,28 @@ export type ApplyScenarioResult = {
   company: Company;
   applied_at: string;
 };
+
+export type CustomScenario = {
+  id: string;
+  name: string;
+  description: string;
+  difficulty: Scenario["difficulty"];
+  industry: string;
+  starting_cash_cents: number;
+  starting_burn_cents: number;
+  market: ScenarioMarket;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CustomScenarioInput = {
+  name: string;
+  description?: string;
+  difficulty?: Scenario["difficulty"];
+  industry?: string;
+  starting_cash_cents: number;
+  starting_burn_cents: number;
+  market_tam: number;
+  market_growth_rate: number;
+  market_trend: number;
+};

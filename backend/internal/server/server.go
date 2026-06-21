@@ -41,6 +41,7 @@ type Server struct {
 	reputation  *repository.ReputationRepo
 	gameEvents  *repository.GameEventRepo
 	decisions   *repository.DecisionRepo
+	customScenarios *repository.CustomScenarioRepo
 }
 
 // HealthChecker is anything that can report its own health via Ping.
@@ -141,6 +142,12 @@ func WithGameEvents(gameEvents *repository.GameEventRepo) Option {
 // DecisionRepo.
 func WithDecisions(decisions *repository.DecisionRepo) Option {
 	return func(s *Server) { s.decisions = decisions }
+}
+
+// WithCustomScenarios enables the custom-scenario editor by providing a
+// CustomScenarioRepo.
+func WithCustomScenarios(repo *repository.CustomScenarioRepo) Option {
+	return func(s *Server) { s.customScenarios = repo }
 }
 
 // New constructs a Server with routes registered.
@@ -281,6 +288,16 @@ func (s *Server) registerRoutes() {
 	}
 	if s.tokens != nil && s.companies != nil {
 		s.mux.Handle("POST /api/v1/scenarios/{id}/apply", s.protected(http.HandlerFunc(s.handleApplyScenario)))
+	}
+
+	if s.tokens != nil && s.customScenarios != nil {
+		s.mux.Handle("GET /api/v1/scenarios/custom", s.protected(http.HandlerFunc(s.handleListCustomScenarios)))
+		s.mux.Handle("POST /api/v1/scenarios/custom", s.protected(http.HandlerFunc(s.handleCreateCustomScenario)))
+		s.mux.Handle("PATCH /api/v1/scenarios/custom/{id}", s.protected(http.HandlerFunc(s.handleUpdateCustomScenario)))
+		s.mux.Handle("DELETE /api/v1/scenarios/custom/{id}", s.protected(http.HandlerFunc(s.handleDeleteCustomScenario)))
+	}
+	if s.tokens != nil && s.companies != nil && s.customScenarios != nil {
+		s.mux.Handle("POST /api/v1/scenarios/custom/{id}/apply", s.protected(http.HandlerFunc(s.handleApplyCustomScenario)))
 	}
 }
 
