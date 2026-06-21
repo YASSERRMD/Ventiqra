@@ -83,6 +83,7 @@ func run() error {
 			server.WithGameEvents(repository.NewGameEventRepo(baseRepo)),
 			server.WithDecisions(repository.NewDecisionRepo(baseRepo)),
 			server.WithCustomScenarios(repository.NewCustomScenarioRepo(baseRepo)),
+			server.WithSaveSlots(repository.NewSaveSlotRepo(baseRepo)),
 		)
 		log.Info("auth, company, simulation, product, employee, launch, customer, pricing, and finance services enabled")
 	}

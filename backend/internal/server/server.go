@@ -42,6 +42,7 @@ type Server struct {
 	gameEvents  *repository.GameEventRepo
 	decisions   *repository.DecisionRepo
 	customScenarios *repository.CustomScenarioRepo
+	saveSlots   *repository.SaveSlotRepo
 }
 
 // HealthChecker is anything that can report its own health via Ping.
@@ -148,6 +149,12 @@ func WithDecisions(decisions *repository.DecisionRepo) Option {
 // CustomScenarioRepo.
 func WithCustomScenarios(repo *repository.CustomScenarioRepo) Option {
 	return func(s *Server) { s.customScenarios = repo }
+}
+
+// WithSaveSlots enables the save/load simulation service by providing a
+// SaveSlotRepo.
+func WithSaveSlots(repo *repository.SaveSlotRepo) Option {
+	return func(s *Server) { s.saveSlots = repo }
 }
 
 // New constructs a Server with routes registered.
@@ -298,6 +305,13 @@ func (s *Server) registerRoutes() {
 	}
 	if s.tokens != nil && s.companies != nil && s.customScenarios != nil {
 		s.mux.Handle("POST /api/v1/scenarios/custom/{id}/apply", s.protected(http.HandlerFunc(s.handleApplyCustomScenario)))
+	}
+
+	if s.tokens != nil && s.companies != nil && s.saveSlots != nil {
+		s.mux.Handle("GET /api/v1/saves", s.protected(http.HandlerFunc(s.handleListSaveSlots)))
+		s.mux.Handle("POST /api/v1/saves", s.protected(http.HandlerFunc(s.handleSaveSlot)))
+		s.mux.Handle("POST /api/v1/saves/{slot}/load", s.protected(http.HandlerFunc(s.handleLoadSlot)))
+		s.mux.Handle("DELETE /api/v1/saves/{slot}", s.protected(http.HandlerFunc(s.handleDeleteSlot)))
 	}
 }
 
