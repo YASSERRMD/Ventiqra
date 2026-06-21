@@ -67,6 +67,7 @@ func newAuthTestServer(t *testing.T) *Server {
 		WithCustomScenarios(repository.NewCustomScenarioRepo(base)),
 		WithSaveSlots(repository.NewSaveSlotRepo(base)),
 		WithTimeline(repository.NewTimelineRepo(base)),
+		WithSnapshots(repository.NewMetricSnapshotRepo(base)),
 	)
 }
 
