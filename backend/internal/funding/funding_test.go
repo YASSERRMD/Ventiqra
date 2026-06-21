@@ -77,3 +77,56 @@ func TestInvestorInterestBounds(t *testing.T) {
 		t.Errorf("traction should raise interest: high=%v low=%v", high, low)
 	}
 }
+
+func TestGenerateOffersDeterministic(t *testing.T) {
+	a := GenerateOffers(42, 1, 5_000_000)
+	b := GenerateOffers(42, 1, 5_000_000)
+	if len(a) != OfferCount {
+		t.Fatalf("offers = %d, want %d", len(a), OfferCount)
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			t.Fatalf("offer %d differs: %+v vs %+v", i, a[i], b[i])
+		}
+	}
+}
+
+func TestGenerateOffersAskAboveFair(t *testing.T) {
+	offers := GenerateOffers(7, 2, 5_000_000)
+	for _, o := range offers {
+		fair := EquityPercent(o.AmountCents, 5_000_000)
+		if o.EquityPercent < fair {
+			t.Errorf("investor asked %v below fair %v", o.EquityPercent, fair)
+		}
+		if o.AmountCents <= 0 || o.InvestorName == "" {
+			t.Errorf("malformed offer: %+v", o)
+		}
+	}
+}
+
+func TestNegotiateOutcomeDeterministic(t *testing.T) {
+	e1, w1 := NegotiateOutcome(42, 1, 0, 20)
+	e2, w2 := NegotiateOutcome(42, 1, 0, 20)
+	if e1 != e2 || w1 != w2 {
+		t.Errorf("negotiation not deterministic: (%v,%v) vs (%v,%v)", e1, w1, e2, w2)
+	}
+}
+
+func TestNegotiateOutcomeEitherImprovesOrWithdraws(t *testing.T) {
+	// Over many seeds/indices, success → lower equity (not withdrawn); failure
+	// → withdrawn with equity unchanged.
+	for seed := int64(0); seed < 30; seed++ {
+		for idx := 0; idx < OfferCount; idx++ {
+			newEq, withdrawn := NegotiateOutcome(seed, 1, idx, 20)
+			if withdrawn {
+				if newEq != 20 {
+					t.Errorf("withdrawn should keep equity at 20, got %v", newEq)
+				}
+			} else {
+				if newEq >= 20 {
+					t.Errorf("success should reduce equity below 20, got %v", newEq)
+				}
+			}
+		}
+	}
+}

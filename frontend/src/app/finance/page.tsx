@@ -5,7 +5,7 @@ import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import { getToken, clearToken } from "@/lib/auth";
 import { formatCents } from "@/lib/format";
-import type { Finance, FundingSummary } from "@/lib/types";
+import type { Finance, FundingSummary, InvestorOffer, NegotiateResult } from "@/lib/types";
 import { PageHeader } from "@/components/layout/page-header";
 
 type State =
@@ -207,7 +207,123 @@ function FundingSection() {
           ))}
         </ul>
       )}
+
+      <OffersPanel onChanged={reload} />
     </section>
+  );
+}
+
+function OffersPanel({ onChanged }: { onChanged: () => void }) {
+  const [offers, setOffers] = useState<InvestorOffer[] | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function reloadOffers() {
+    const token = getToken();
+    if (!token) return;
+    try {
+      const list = await api.get<InvestorOffer[]>("/api/v1/companies/me/funding/offers", { token });
+      setOffers(list);
+    } catch {
+      setOffers([]);
+    }
+  }
+
+  useEffect(() => {
+    const token = getToken();
+    if (!token) return;
+    api
+      .get<InvestorOffer[]>("/api/v1/companies/me/funding/offers", { token })
+      .then(setOffers)
+      .catch(() => setOffers([]));
+  }, []);
+
+  async function solicit() {
+    const token = getToken();
+    if (!token) return;
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const list = await api.post<InvestorOffer[]>(
+        "/api/v1/companies/me/funding/offers/solicit",
+        undefined,
+        { token },
+      );
+      setOffers(list);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not solicit offers.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function act(id: string, kind: "accept" | "reject" | "negotiate") {
+    const token = getToken();
+    if (!token) return;
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      if (kind === "negotiate") {
+        const res = await api.post<NegotiateResult>(
+          `/api/v1/companies/me/funding/offers/${id}/negotiate`,
+          undefined,
+          { token },
+        );
+        setNotice(res.message);
+      } else {
+        await api.post(`/api/v1/companies/me/funding/offers/${id}/${kind}`, undefined, { token });
+        setNotice(kind === "accept" ? "Offer accepted — round closed." : "Offer rejected.");
+      }
+      await reloadOffers();
+      await onChanged();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Action failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mt-4">
+      <div className="flex items-center justify-between">
+        <h4 className="text-sm font-medium text-foreground">Investor offers</h4>
+        <button
+          type="button"
+          onClick={solicit}
+          disabled={busy}
+          className="rounded-md border border-border bg-background px-3 py-1.5 text-xs font-semibold text-foreground outline-none transition hover:border-brand disabled:opacity-60"
+        >
+          {busy ? "Working…" : "Solicit offers"}
+        </button>
+      </div>
+      {notice && <p className="mt-2 text-xs text-emerald-400">{notice}</p>}
+      {error && <p className="mt-2 text-xs text-rose-400">{error}</p>}
+      {offers && offers.length > 0 && (
+        <ul className="mt-3 divide-y divide-border rounded-xl border border-border bg-surface">
+          {offers.map((o) => (
+            <li key={o.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+              <div className="text-sm">
+                <p className="font-medium text-foreground">{o.investor_name}</p>
+                <p className="text-xs text-muted">
+                  {formatCents(o.amount_cents)} for {o.equity_percent.toFixed(1)}%
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => act(o.id, "negotiate")} disabled={busy} className="rounded-md border border-border bg-background px-2.5 py-1 text-xs font-medium text-foreground hover:border-brand disabled:opacity-60">Negotiate</button>
+                <button onClick={() => act(o.id, "accept")} disabled={busy} className="rounded-md bg-emerald-500/90 px-2.5 py-1 text-xs font-semibold text-surface-muted hover:bg-emerald-500 disabled:opacity-60">Accept</button>
+                <button onClick={() => act(o.id, "reject")} disabled={busy} className="rounded-md border border-rose-500/40 bg-rose-500/10 px-2.5 py-1 text-xs font-medium text-rose-300 hover:bg-rose-500/20 disabled:opacity-60">Reject</button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+      {offers && offers.length === 0 && (
+        <p className="mt-2 text-xs text-muted">No pending offers. Solicit to attract investors.</p>
+      )}
+    </div>
   );
 }
 

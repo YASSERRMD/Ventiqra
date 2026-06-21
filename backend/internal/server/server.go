@@ -35,6 +35,7 @@ type Server struct {
 	pricing   *repository.PricingRepo
 	finance   *repository.FinanceRepo
 	funding   *repository.FundingRepo
+	offers    *repository.OfferRepo
 }
 
 // HealthChecker is anything that can report its own health via Ping.
@@ -104,6 +105,11 @@ func WithFinance(finance *repository.FinanceRepo) Option {
 // WithFunding enables the funding service by providing a FundingRepo.
 func WithFunding(funding *repository.FundingRepo) Option {
 	return func(s *Server) { s.funding = funding }
+}
+
+// WithOffers enables the investor-offer service by providing an OfferRepo.
+func WithOffers(offers *repository.OfferRepo) Option {
+	return func(s *Server) { s.offers = offers }
 }
 
 // New constructs a Server with routes registered.
@@ -206,6 +212,14 @@ func (s *Server) registerRoutes() {
 	if s.tokens != nil && s.companies != nil && s.funding != nil {
 		s.mux.Handle("GET /api/v1/companies/me/funding", s.protected(http.HandlerFunc(s.handleListFunding)))
 		s.mux.Handle("POST /api/v1/companies/me/funding/raise", s.protected(http.HandlerFunc(s.handleRaiseFunding)))
+	}
+
+	if s.tokens != nil && s.companies != nil && s.offers != nil {
+		s.mux.Handle("GET /api/v1/companies/me/funding/offers", s.protected(http.HandlerFunc(s.handleListOffers)))
+		s.mux.Handle("POST /api/v1/companies/me/funding/offers/solicit", s.protected(http.HandlerFunc(s.handleSolicitOffers)))
+		s.mux.Handle("POST /api/v1/companies/me/funding/offers/{id}/accept", s.protected(http.HandlerFunc(s.handleAcceptOffer)))
+		s.mux.Handle("POST /api/v1/companies/me/funding/offers/{id}/reject", s.protected(http.HandlerFunc(s.handleRejectOffer)))
+		s.mux.Handle("POST /api/v1/companies/me/funding/offers/{id}/negotiate", s.protected(http.HandlerFunc(s.handleNegotiateOffer)))
 	}
 }
 
