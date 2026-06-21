@@ -158,6 +158,20 @@ func (r *CompanyRepo) UpdateStatus(ctx context.Context, id string, status Compan
 	return nil
 }
 
+// UpdateProfile sets the company's cash and industry in one call. Used when
+// applying a scenario to an existing company.
+func (r *CompanyRepo) UpdateProfile(ctx context.Context, id string, cash int64, industry string) error {
+	const q = `UPDATE companies SET cash = $2, industry = $3 WHERE id = $1`
+	tag, err := r.pool.Exec(ctx, q, id, cash, industry)
+	if err != nil {
+		return fmt.Errorf("update profile: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
 type companyScanner interface {
 	Scan(dest ...any) error
 }

@@ -25,6 +25,7 @@ engine. The LLM is only used here as a coding assistant to build it.
 - **Customer growth** — acquisition, churn, satisfaction, and MAU.
 - **Dashboard** — live metrics, charts, and timeline.
 - **Scenario editor** — predefined scenarios and custom difficulty tuning.
+- **Predefined scenarios** — start as a bootstrapped SaaS, a VC-funded rocket, a hardware maker, or a two-sided marketplace.
 
 ---
 

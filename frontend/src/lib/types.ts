@@ -282,3 +282,27 @@ export type DecisionOutcome = {
   recurring_cash_delta: number;
   remaining_days: number;
 };
+
+export type ScenarioMarket = {
+  tam: number;
+  growth_rate: number;
+  trend_multiplier: number;
+};
+
+export type Scenario = {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  difficulty: "easy" | "normal" | "hard" | "brutal";
+  industry: string;
+  starting_cash_cents: number;
+  starting_burn_cents: number;
+  market: ScenarioMarket;
+};
+
+export type ApplyScenarioResult = {
+  scenario: Scenario;
+  company: Company;
+  applied_at: string;
+};
