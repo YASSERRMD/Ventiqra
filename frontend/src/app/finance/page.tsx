@@ -5,7 +5,7 @@ import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import { getToken, clearToken } from "@/lib/auth";
 import { formatCents } from "@/lib/format";
-import type { Finance } from "@/lib/types";
+import type { Finance, FundingSummary } from "@/lib/types";
 import { PageHeader } from "@/components/layout/page-header";
 
 type State =
@@ -98,7 +98,116 @@ export default function FinancePage() {
         </li>
       </ul>
       <p className="mt-3 text-xs text-muted">Simulated day {f.day}.</p>
+
+      <FundingSection />
     </div>
+  );
+}
+
+function FundingSection() {
+  const [summary, setSummary] = useState<FundingSummary | null>(null);
+  const [amount, setAmount] = useState("1000000");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const token = getToken();
+    if (!token) return;
+    api
+      .get<FundingSummary>("/api/v1/companies/me/funding", { token })
+      .then(setSummary)
+      .catch(() => setSummary(null));
+  }, []);
+
+  async function reload() {
+    const token = getToken();
+    if (!token) return;
+    try {
+      const s = await api.get<FundingSummary>("/api/v1/companies/me/funding", { token });
+      setSummary(s);
+    } catch {
+      setSummary(null);
+    }
+  }
+
+  async function raise(e: React.FormEvent) {
+    e.preventDefault();
+    const token = getToken();
+    if (!token) {
+      setError("You are no longer logged in.");
+      return;
+    }
+    const cents = Math.max(1, Math.round(Number(amount) || 0));
+    setBusy(true);
+    setError(null);
+    try {
+      await api.post("/api/v1/companies/me/funding/raise", { amount_cents: cents }, { token });
+      await reload();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not raise funding.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!summary) return null;
+
+  return (
+    <section className="mt-8">
+      <h3 className="text-base font-semibold text-foreground">Funding</h3>
+      <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <Stat label="Pre-money valuation" value={formatCents(summary.pre_money_cents)} tone="text-foreground" />
+        <Stat label="Founder equity" value={`${summary.founder_equity_percent.toFixed(1)}%`} tone="text-foreground" />
+        <Stat
+          label="Investor interest"
+          value={`${(summary.investor_interest * 100).toFixed(0)}%`}
+          tone="text-emerald-400"
+        />
+      </div>
+
+      <form
+        onSubmit={raise}
+        className="mt-4 flex max-w-xl items-end gap-3 rounded-xl border border-border bg-surface p-4"
+      >
+        <label className="flex flex-1 flex-col gap-1 text-sm">
+          <span className="text-muted">Raise amount (cents)</span>
+          <input
+            className="rounded-md border border-border bg-background px-3 py-2 text-foreground outline-none focus:border-brand"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            inputMode="numeric"
+          />
+        </label>
+        <button
+          type="submit"
+          disabled={busy}
+          className="rounded-md bg-brand px-4 py-2 text-sm font-semibold text-surface-muted disabled:opacity-60"
+        >
+          {busy ? "Raising…" : "Raise round"}
+        </button>
+        {error && <p className="basis-full text-sm text-rose-400">{error}</p>}
+      </form>
+
+      {summary.rounds.length > 0 && (
+        <ul className="mt-4 divide-y divide-border rounded-xl border border-border bg-surface">
+          {summary.rounds.map((r) => (
+            <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
+              <div>
+                <p className="font-medium capitalize text-foreground">{r.round_name}</p>
+                <p className="text-xs text-muted">Day {r.sim_day}</p>
+              </div>
+              <div className="text-right text-xs text-muted">
+                <p>
+                  <span className="text-foreground">{formatCents(r.amount_cents)}</span> for{" "}
+                  <span className="text-foreground">{r.equity_percent.toFixed(1)}%</span>
+                </p>
+                <p>pre {formatCents(r.pre_money_cents)}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 

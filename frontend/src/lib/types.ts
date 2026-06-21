@@ -151,3 +151,21 @@ export type Finance = {
   profit_loss_cents: number;
   day: number;
 };
+
+export type FundingRound = {
+  id: string;
+  round_name: string;
+  amount_cents: number;
+  pre_money_cents: number;
+  equity_percent: number;
+  sim_day: number;
+  created_at: string;
+};
+
+export type FundingSummary = {
+  pre_money_cents: number;
+  founder_equity_percent: number;
+  investor_interest: number;
+  rounds_raised: number;
+  rounds: FundingRound[];
+};
