@@ -40,7 +40,7 @@ func TestDemandPenetration(t *testing.T) {
 	if got := DemandPenetration(0, 100_000); got != 1.0 {
 		t.Errorf("empty penetration = %v, want 1", got)
 	}
-	if got := DemandPenetration(50_000, 100_000); got > 0.49 || got < 0.51 {
+	if got := DemandPenetration(50_000, 100_000); got < 0.49 || got > 0.51 {
 		t.Errorf("half penetration = %v, want ~0.5", got)
 	}
 	if got := DemandPenetration(200_000, 100_000); got != 0 {
