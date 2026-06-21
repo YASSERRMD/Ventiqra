@@ -23,7 +23,7 @@ engine. The LLM is only used here as a coding assistant to build it.
 - **Strategic decisions** — weigh risk/reward decision cards with short- and long-term effects.
 - **Pricing experiments** — A/B price sensitivity and revenue impact.
 - **Customer growth** — acquisition, churn, satisfaction, and MAU.
-- **Dashboard** — live metrics, charts, and timeline.
+- **Dashboard** — live metrics, charts, timeline, and milestones.
 - **Save/load** — capture a run into a named slot and restore it later.
 - **Scenario editor** — predefined scenarios and custom difficulty tuning.
 - **Predefined scenarios** — start as a bootstrapped SaaS, a VC-funded rocket, a hardware maker, or a two-sided marketplace.

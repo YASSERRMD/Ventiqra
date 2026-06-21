@@ -92,6 +92,9 @@ func (s *Server) handleCreateCompany(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Record the founding milestone on the timeline.
+	s.recordTimeline(r.Context(), created.ID, "milestone", "Founded "+created.Name, "The company was founded.", 0)
+
 	writeJSON(w, http.StatusCreated, toCompanyResponse(created))
 }
 

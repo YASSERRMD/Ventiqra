@@ -178,6 +178,10 @@ func (s *Server) handleResolveDecision(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Record the decision on the unified timeline.
+	s.recordTimeline(r.Context(), card.CompanyID, "decision", d.Title+": "+string(outcome),
+		"Chose: "+ch.Label, day)
+
 	writeJSON(w, http.StatusOK, resolveDecisionResponse{
 		ID:                 resolved.ID,
 		Outcome:            string(outcome),

@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/YASSERRMD/Ventiqra/backend/internal/launch"
@@ -75,6 +76,10 @@ func (s *Server) handleLaunchProduct(w http.ResponseWriter, r *http.Request) {
 	// Launching is a reputation milestone and a team morale boost.
 	s.recordReputationEvent(r.Context(), companyID, "launched "+product.Name, 3, s.currentSimDay(r.Context(), companyID))
 	s.boostTeam(r.Context(), companyID, 3)
+
+	// Record the launch on the unified timeline.
+	s.recordTimeline(r.Context(), companyID, "launch", "Launched "+product.Name,
+		"Initial customers: "+strconv.Itoa(customers)+".", s.currentSimDay(r.Context(), companyID))
 
 	// Seed the product's customer state from the launch (initial customers +
 	// readiness-derived satisfaction). Idempotent if a state already exists.

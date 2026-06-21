@@ -122,6 +122,10 @@ func (s *Server) handleRaiseFunding(w http.ResponseWriter, r *http.Request) {
 	s.recordReputationEvent(r.Context(), company.ID, "raised "+roundName, 2, day)
 	s.boostTeam(r.Context(), company.ID, 5)
 
+	// Record the funding round on the unified timeline.
+	s.recordTimeline(r.Context(), company.ID, "funding", "Raised "+roundName,
+		"Closed a "+roundName+" round.", day)
+
 	updated, _ := s.companies.GetCompany(r.Context(), company.ID)
 	summary := s.buildFundingSummary(r.Context(), updated)
 	summary.Rounds = append(summary.Rounds, fundingRoundResponse{
