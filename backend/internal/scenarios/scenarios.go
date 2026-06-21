@@ -131,3 +131,184 @@ func IsValidDifficulty(d Difficulty) bool {
 	}
 	return false
 }
+
+// Limits bound the editable ranges for custom-scenario fields, keeping saved
+// scenarios playable (no infinite cash, no negative markets).
+const (
+	MinNameLen         = 1
+	MaxNameLen         = 80
+	MaxDescriptionLen  = 1000
+	MaxIndustryLen     = 60
+
+	MinStartingCashCents int64 = 10_000_00      // $1,000
+	MaxStartingCashCents int64 = 50_000_000_00  // $50,000,000
+
+	MinStartingBurnCents int64 = 1_000_00       // $100/mo
+	MaxStartingBurnCents int64 = 5_000_000_00   // $5,000,000/mo
+
+	MinTAM = 1_000
+	MaxTAM = 10_000_000
+
+	MinGrowthRate = 0.0
+	MaxGrowthRate = 0.5 // 50%/yr
+
+	MinTrend = 0.5
+	MaxTrend = 2.0
+)
+
+// CustomInput holds the user-supplied fields for a custom scenario, before
+// validation/clamping. Numeric fields are pointers so "omitted" is distinct
+// from zero.
+type CustomInput struct {
+	Name              string
+	Description       string
+	Difficulty        Difficulty
+	Industry          string
+	StartingCashCents int64
+	StartingBurnCents int64
+	MarketTAM         int
+	MarketGrowthRate  float64
+	MarketTrend       float64
+}
+
+// Validate returns an error if the custom-scenario input is out of range or
+// missing required fields. Difficulty defaults to Normal when empty.
+func (c CustomInput) Validate() error {
+	c.Name = trim(c.Name)
+	if len(c.Name) < MinNameLen || len(c.Name) > MaxNameLen {
+		return ErrNameLength
+	}
+	if len(c.Description) > MaxDescriptionLen {
+		return ErrDescriptionTooLong
+	}
+	if len(c.Industry) > MaxIndustryLen {
+		return ErrIndustryTooLong
+	}
+	if c.Difficulty == "" {
+		c.Difficulty = DifficultyNormal
+	}
+	if !IsValidDifficulty(c.Difficulty) {
+		return ErrInvalidDifficulty
+	}
+	if c.StartingCashCents < MinStartingCashCents || c.StartingCashCents > MaxStartingCashCents {
+		return ErrCashRange
+	}
+	if c.StartingBurnCents < MinStartingBurnCents || c.StartingBurnCents > MaxStartingBurnCents {
+		return ErrBurnRange
+	}
+	if c.MarketTAM < MinTAM || c.MarketTAM > MaxTAM {
+		return ErrTAMRange
+	}
+	if c.MarketGrowthRate < MinGrowthRate || c.MarketGrowthRate > MaxGrowthRate {
+		return ErrGrowthRange
+	}
+	if c.MarketTrend < MinTrend || c.MarketTrend > MaxTrend {
+		return ErrTrendRange
+	}
+	return nil
+}
+
+// Normalize clamps a CustomInput into safe, defaulted values and returns the
+// resulting Scenario. It assumes Validate() has passed (or clamps permissively
+// when called directly). Difficulty defaults to Normal.
+func (c CustomInput) Normalize(id string) Scenario {
+	if c.Difficulty == "" || !IsValidDifficulty(c.Difficulty) {
+		c.Difficulty = DifficultyNormal
+	}
+	return Scenario{
+		ID: id, Name: trim(c.Name), Category: "custom", Description: trim(c.Description),
+		Difficulty: c.Difficulty, Industry: trim(c.Industry),
+		StartingCashCents: clampCash(c.StartingCashCents),
+		StartingBurnCents: clampBurn(c.StartingBurnCents),
+		Market: MarketConfig{
+			TAM:             clampTAM(c.MarketTAM),
+			GrowthRate:      clampGrowth(c.MarketGrowthRate),
+			TrendMultiplier: clampTrend(c.MarketTrend),
+		},
+	}
+}
+
+// Sentinel validation errors. They carry no state so callers can compare with
+// errors.Is.
+var (
+	ErrNameLength       = validationError("name must be 1–80 characters")
+	ErrDescriptionTooLong = validationError("description must be 1000 characters or fewer")
+	ErrIndustryTooLong  = validationError("industry must be 60 characters or fewer")
+	ErrInvalidDifficulty = validationError("difficulty must be easy, normal, hard, or brutal")
+	ErrCashRange        = validationError("starting cash must be between $1,000 and $50,000,000")
+	ErrBurnRange        = validationError("starting burn must be between $100 and $5,000,000 per month")
+	ErrTAMRange         = validationError("market TAM must be between 1,000 and 10,000,000")
+	ErrGrowthRange      = validationError("market growth rate must be between 0% and 50%")
+	ErrTrendRange       = validationError("market trend must be between 0.5 and 2.0")
+)
+
+type validationError string
+
+func (e validationError) Error() string { return string(e) }
+
+func trim(s string) string {
+	// Trim leading/trailing whitespace without importing unicode (ASCII space
+	// and tabs suffice for form input).
+	for len(s) > 0 && (s[0] == ' ' || s[0] == '\t' || s[0] == '\n') {
+		s = s[1:]
+	}
+	for len(s) > 0 {
+		last := s[len(s)-1]
+		if last == ' ' || last == '\t' || last == '\n' {
+			s = s[:len(s)-1]
+			continue
+		}
+		break
+	}
+	return s
+}
+
+func clampCash(v int64) int64 {
+	if v < MinStartingCashCents {
+		return MinStartingCashCents
+	}
+	if v > MaxStartingCashCents {
+		return MaxStartingCashCents
+	}
+	return v
+}
+
+func clampBurn(v int64) int64 {
+	if v < MinStartingBurnCents {
+		return MinStartingBurnCents
+	}
+	if v > MaxStartingBurnCents {
+		return MaxStartingBurnCents
+	}
+	return v
+}
+
+func clampTAM(v int) int {
+	if v < MinTAM {
+		return MinTAM
+	}
+	if v > MaxTAM {
+		return MaxTAM
+	}
+	return v
+}
+
+func clampGrowth(v float64) float64 {
+	if v < MinGrowthRate {
+		return MinGrowthRate
+	}
+	if v > MaxGrowthRate {
+		return MaxGrowthRate
+	}
+	return v
+}
+
+func clampTrend(v float64) float64 {
+	if v < MinTrend {
+		return MinTrend
+	}
+	if v > MaxTrend {
+		return MaxTrend
+	}
+	return v
+}
