@@ -15,7 +15,7 @@ type Model struct {
 var DefaultModel = Model{TAM: 100_000, GrowthRate: 0.01, TrendMultiplier: 1.0}
 
 // marketStreamSalt separates the market RNG stream.
-const marketStreamSalt uint64 = 0xC0FFEE_MARKET_1234
+const marketStreamSalt uint64 = 845678901234567890
 
 // DailyGrowth returns the daily increase in the addressable market derived from
 // a monthly growth rate (over a 30-day month).
