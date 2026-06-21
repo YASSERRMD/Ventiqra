@@ -8,6 +8,7 @@ import (
 	"github.com/YASSERRMD/Ventiqra/backend/internal/customers"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/develop"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/finance"
+	"github.com/YASSERRMD/Ventiqra/backend/internal/marketing"
 	metricsModule "github.com/YASSERRMD/Ventiqra/backend/internal/metrics"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/middleware"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/pricing"
@@ -92,10 +93,14 @@ func (s *Server) handleSimTick(w http.ResponseWriter, r *http.Request) {
 	// The market grows and its trend multiplier amplifies or dampens demand.
 	trend := s.advanceMarket(r.Context(), company.ID, state.Seed, state.Day+1)
 
+	// Marketing budget produces deterministic customer conversions.
+	mktBudget := s.marketingBudget(r.Context(), company.ID)
+	mktConversions := marketing.Conversions(mktBudget, state.Seed, int64(state.Day+1))
+
 	// Advance customer dynamics (acquisition/churn/MAU/satisfaction) for every
 	// launched product, deterministically for the round. Pricing feeds demand and
 	// the daily revenue total feeds the engine.
-	dailyRevenue, totalCustomers := s.advanceCustomers(r.Context(), company.ID, state.Seed, state.Day+1, pressure, trend)
+	dailyRevenue, totalCustomers := s.advanceCustomers(r.Context(), company.ID, state.Seed, state.Day+1, pressure, trend, mktConversions)
 
 	// Compute the full monthly burn from the finance breakdown: base overhead,
 	// payroll, infrastructure (scaled by customers), and marketing budget.
@@ -188,7 +193,7 @@ func (s *Server) advanceBuildingProducts(ctx context.Context, companyID string, 
 // `pressure` (0..0.5) from competitors dampens acquisition demand. Returns the
 // total daily revenue (in cents) and the total customer count across launched
 // products, so the finance engine can compute burn/P&L.
-func (s *Server) advanceCustomers(ctx context.Context, companyID string, seed int64, day int, pressure, trend float64) (int64, int) {
+func (s *Server) advanceCustomers(ctx context.Context, companyID string, seed int64, day int, pressure, trend float64, marketingConversions int) (int64, int) {
 	if s.customers == nil || s.products == nil {
 		return 0, 0
 	}
@@ -203,6 +208,12 @@ func (s *Server) advanceCustomers(ctx context.Context, companyID string, seed in
 			launched[p.ID] = p
 		}
 	}
+
+	if len(launched) == 0 {
+		return 0, 0
+	}
+	// Marketing conversions are company-wide; split them across launched products.
+	perProduct := marketingConversions / len(launched)
 
 	var dailyRevenue int64
 	var totalCustomers int
@@ -225,6 +236,11 @@ func (s *Server) advanceCustomers(ctx context.Context, companyID string, seed in
 		next := customers.Advance(customers.Product{
 			Total: c.Total, MAU: c.MAU, Churned: c.Churned, Satisfaction: c.Satisfaction,
 		}, seed, day, demand)
+		// Top up with marketing-driven acquisitions.
+		if perProduct > 0 {
+			next.Total += perProduct
+			next.MAU = int(float64(next.Total) * customers.MauRatio(next.Satisfaction))
+		}
 		if err := s.customers.Save(ctx, c.ProductID, next.Total, next.MAU, next.Churned, next.Satisfaction); err != nil {
 			s.log.Error("advance customers failed", "product", c.ProductID, "error", err)
 		}
