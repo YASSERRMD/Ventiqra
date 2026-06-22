@@ -47,6 +47,7 @@ type Server struct {
 	timeline    *repository.TimelineRepo
 	snapshots   *repository.MetricSnapshotRepo
 	hub         *realtime.Hub
+	simControl  *repository.SimControlRepo
 }
 
 // HealthChecker is anything that can report its own health via Ping.
@@ -174,6 +175,11 @@ func WithSnapshots(repo *repository.MetricSnapshotRepo) Option {
 // WithHub enables WebSocket realtime updates by providing a realtime hub.
 func WithHub(hub *realtime.Hub) Option {
 	return func(s *Server) { s.hub = hub }
+}
+
+// WithSimControl enables simulation speed control by providing a SimControlRepo.
+func WithSimControl(repo *repository.SimControlRepo) Option {
+	return func(s *Server) { s.simControl = repo }
 }
 
 // New constructs a Server with routes registered.
@@ -343,6 +349,13 @@ func (s *Server) registerRoutes() {
 
 	if s.tokens != nil && s.companies != nil && s.hub != nil {
 		s.mux.Handle("GET /api/v1/realtime", http.HandlerFunc(s.handleWebSocket))
+	}
+
+	if s.tokens != nil && s.companies != nil && s.simControl != nil {
+		s.mux.Handle("GET /api/v1/companies/me/sim/control", s.protected(http.HandlerFunc(s.handleGetSimControl)))
+		s.mux.Handle("POST /api/v1/companies/me/sim/pause", s.protected(http.HandlerFunc(s.handlePauseSim)))
+		s.mux.Handle("POST /api/v1/companies/me/sim/resume", s.protected(http.HandlerFunc(s.handleResumeSim)))
+		s.mux.Handle("POST /api/v1/companies/me/sim/speed", s.protected(http.HandlerFunc(s.handleSetSimSpeed)))
 	}
 }
 

@@ -88,6 +88,7 @@ func run() error {
 			server.WithTimeline(repository.NewTimelineRepo(baseRepo)),
 			server.WithSnapshots(repository.NewMetricSnapshotRepo(baseRepo)),
 			server.WithHub(realtime.NewHub()),
+			server.WithSimControl(repository.NewSimControlRepo(baseRepo)),
 		)
 		log.Info("auth, company, simulation, product, employee, launch, customer, pricing, and finance services enabled")
 	}
