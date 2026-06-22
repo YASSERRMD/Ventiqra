@@ -9,6 +9,7 @@ import { MarketingPanel } from "@/components/dashboard/marketing-panel";
 import { ReputationPanel } from "@/components/dashboard/reputation-panel";
 import { EventsPanel } from "@/components/dashboard/events-panel";
 import { TimelinePanel } from "@/components/dashboard/timeline-panel";
+import { RoadmapPanel } from "@/components/dashboard/roadmap-panel";
 import { AnalyticsPanel } from "@/components/dashboard/analytics-panel";
 import { DecisionModal } from "@/components/dashboard/decision-modal";
 
@@ -34,6 +35,7 @@ export default function DashboardPage() {
       <CompetitorPanel />
       <EventsPanel />
       <TimelinePanel />
+      <RoadmapPanel />
       <AnalyticsPanel />
       <DecisionModal />
     </div>

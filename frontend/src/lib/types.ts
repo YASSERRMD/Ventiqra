@@ -396,3 +396,16 @@ export type SimControl = {
   mode: "paused" | "auto";
   speed: 1 | 5 | 30;
 };
+
+export type RoadmapFeature = {
+  id: string;
+  name: string;
+  description: string;
+  priority: number;
+  status: "backlog" | "developing" | "shipped";
+  progress: number;
+  value_points: number;
+  started_day: number | null;
+  shipped_day: number | null;
+  product_id: string | null;
+};
