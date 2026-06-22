@@ -373,3 +373,21 @@ export type Timeline = {
   entries: TimelineEntry[];
   monthly_summary: MonthlySummary[];
 };
+
+export type AnalyticsPoint = {
+  day: number;
+  cash_cents: number;
+  revenue_cents: number;
+  monthly_burn: number;
+  customers: number;
+  valuation_cents: number;
+};
+
+export type Analytics = {
+  day: number;
+  cash: AnalyticsPoint[];
+  revenue: AnalyticsPoint[];
+  customers: AnalyticsPoint[];
+  burn: AnalyticsPoint[];
+  valuation: AnalyticsPoint[];
+};

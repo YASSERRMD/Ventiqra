@@ -85,6 +85,7 @@ func run() error {
 			server.WithCustomScenarios(repository.NewCustomScenarioRepo(baseRepo)),
 			server.WithSaveSlots(repository.NewSaveSlotRepo(baseRepo)),
 			server.WithTimeline(repository.NewTimelineRepo(baseRepo)),
+			server.WithSnapshots(repository.NewMetricSnapshotRepo(baseRepo)),
 		)
 		log.Info("auth, company, simulation, product, employee, launch, customer, pricing, and finance services enabled")
 	}

@@ -133,6 +133,9 @@ func (s *Server) handleSimTick(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Capture the day's headline metrics for the analytics dashboard.
+	s.recordSnapshot(r.Context(), company.ID, simState.Day, simState.Cash, simState.Revenue, simState.MonthlyBurn, totalCustomers)
+
 	if err := s.companies.UpdateCash(r.Context(), company.ID, simState.Cash); err != nil {
 		s.log.Error("sim tick: update company cash failed", "error", err)
 		writeError(w, http.StatusInternalServerError, "could not update company cash")
