@@ -26,6 +26,7 @@ engine. The LLM is only used here as a coding assistant to build it.
 - **Dashboard** — live metrics, charts, timeline, and milestones.
 - **Save/load** — capture a run into a named slot and restore it later.
 - **Realtime** — WebSocket push of tick updates, events, and decision offers to a live dashboard.
+- **Speed controls** — pause/resume, 1x/5x/30x speed, and manual step.
 - **Scenario editor** — predefined scenarios and custom difficulty tuning.
 - **Predefined scenarios** — start as a bootstrapped SaaS, a VC-funded rocket, a hardware maker, or a two-sided marketplace.
 - **Scenario editor** — author and save your own custom scenarios with tuned cash, market, and difficulty.
