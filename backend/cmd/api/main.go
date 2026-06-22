@@ -14,6 +14,7 @@ import (
 	"github.com/YASSERRMD/Ventiqra/backend/internal/config"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/db"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/logger"
+	"github.com/YASSERRMD/Ventiqra/backend/internal/realtime"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/repository"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/server"
 )
@@ -86,6 +87,7 @@ func run() error {
 			server.WithSaveSlots(repository.NewSaveSlotRepo(baseRepo)),
 			server.WithTimeline(repository.NewTimelineRepo(baseRepo)),
 			server.WithSnapshots(repository.NewMetricSnapshotRepo(baseRepo)),
+			server.WithHub(realtime.NewHub()),
 		)
 		log.Info("auth, company, simulation, product, employee, launch, customer, pricing, and finance services enabled")
 	}

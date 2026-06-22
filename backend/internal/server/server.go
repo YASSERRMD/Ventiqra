@@ -14,6 +14,7 @@ import (
 	"github.com/YASSERRMD/Ventiqra/backend/internal/auth"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/config"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/middleware"
+	"github.com/YASSERRMD/Ventiqra/backend/internal/realtime"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/repository"
 )
 
@@ -45,6 +46,7 @@ type Server struct {
 	saveSlots   *repository.SaveSlotRepo
 	timeline    *repository.TimelineRepo
 	snapshots   *repository.MetricSnapshotRepo
+	hub         *realtime.Hub
 }
 
 // HealthChecker is anything that can report its own health via Ping.
@@ -167,6 +169,11 @@ func WithTimeline(repo *repository.TimelineRepo) Option {
 // WithSnapshots enables the analytics service by providing a MetricSnapshotRepo.
 func WithSnapshots(repo *repository.MetricSnapshotRepo) Option {
 	return func(s *Server) { s.snapshots = repo }
+}
+
+// WithHub enables WebSocket realtime updates by providing a realtime hub.
+func WithHub(hub *realtime.Hub) Option {
+	return func(s *Server) { s.hub = hub }
 }
 
 // New constructs a Server with routes registered.
@@ -332,6 +339,10 @@ func (s *Server) registerRoutes() {
 
 	if s.tokens != nil && s.companies != nil && s.snapshots != nil {
 		s.mux.Handle("GET /api/v1/companies/me/analytics", s.protected(http.HandlerFunc(s.handleGetAnalytics)))
+	}
+
+	if s.tokens != nil && s.companies != nil && s.hub != nil {
+		s.mux.Handle("GET /api/v1/realtime", http.HandlerFunc(s.handleWebSocket))
 	}
 }
 
