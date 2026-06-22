@@ -50,6 +50,7 @@ type Server struct {
 	simControl  *repository.SimControlRepo
 	features    *repository.FeatureRepo
 	techDebt    *repository.TechDebtRepo
+	infrastructure *repository.InfrastructureRepo
 }
 
 // HealthChecker is anything that can report its own health via Ping.
@@ -192,6 +193,11 @@ func WithFeatures(repo *repository.FeatureRepo) Option {
 // WithTechDebt enables the technical-debt service by providing a TechDebtRepo.
 func WithTechDebt(repo *repository.TechDebtRepo) Option {
 	return func(s *Server) { s.techDebt = repo }
+}
+
+// WithInfrastructure enables the infrastructure scaling service.
+func WithInfrastructure(repo *repository.InfrastructureRepo) Option {
+	return func(s *Server) { s.infrastructure = repo }
 }
 
 // New constructs a Server with routes registered.
@@ -380,6 +386,11 @@ func (s *Server) registerRoutes() {
 	if s.tokens != nil && s.companies != nil && s.techDebt != nil {
 		s.mux.Handle("GET /api/v1/companies/me/tech-debt", s.protected(http.HandlerFunc(s.handleGetTechDebt)))
 		s.mux.Handle("POST /api/v1/companies/me/tech-debt/refactor", s.protected(http.HandlerFunc(s.handleRefactor)))
+	}
+
+	if s.tokens != nil && s.companies != nil && s.infrastructure != nil {
+		s.mux.Handle("GET /api/v1/companies/me/infrastructure", s.protected(http.HandlerFunc(s.handleGetInfrastructure)))
+		s.mux.Handle("POST /api/v1/companies/me/infrastructure/scale", s.protected(http.HandlerFunc(s.handleScaleUp)))
 	}
 }
 

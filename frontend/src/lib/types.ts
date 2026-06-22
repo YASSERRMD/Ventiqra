@@ -416,3 +416,13 @@ export type TechDebt = {
   outage_risk: number;
   refactors: number;
 };
+
+export type Infrastructure = {
+  tier: number;
+  capacity: number;
+  hosting_cost_cents: number;
+  customers: number;
+  load_ratio: number;
+  outage_risk: number;
+  scale_up_cost_cents: number;
+};
