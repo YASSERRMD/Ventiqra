@@ -90,6 +90,7 @@ func run() error {
 			server.WithHub(realtime.NewHub()),
 			server.WithSimControl(repository.NewSimControlRepo(baseRepo)),
 			server.WithFeatures(repository.NewFeatureRepo(baseRepo)),
+			server.WithTechDebt(repository.NewTechDebtRepo(baseRepo)),
 		)
 		log.Info("auth, company, simulation, product, employee, launch, customer, pricing, and finance services enabled")
 	}

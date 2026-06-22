@@ -72,6 +72,7 @@ func newAuthTestServer(t *testing.T) *Server {
 		WithHub(realtime.NewHub()),
 		WithSimControl(repository.NewSimControlRepo(base)),
 		WithFeatures(repository.NewFeatureRepo(base)),
+		WithTechDebt(repository.NewTechDebtRepo(base)),
 	)
 }
 
