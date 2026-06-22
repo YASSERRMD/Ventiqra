@@ -11,6 +11,7 @@ import { EventsPanel } from "@/components/dashboard/events-panel";
 import { TimelinePanel } from "@/components/dashboard/timeline-panel";
 import { RoadmapPanel } from "@/components/dashboard/roadmap-panel";
 import { EngineeringPanel } from "@/components/dashboard/engineering-panel";
+import { InfrastructurePanel } from "@/components/dashboard/infrastructure-panel";
 import { AnalyticsPanel } from "@/components/dashboard/analytics-panel";
 import { DecisionModal } from "@/components/dashboard/decision-modal";
 
@@ -38,6 +39,7 @@ export default function DashboardPage() {
       <TimelinePanel />
       <RoadmapPanel />
       <EngineeringPanel />
+      <InfrastructurePanel />
       <AnalyticsPanel />
       <DecisionModal />
     </div>
