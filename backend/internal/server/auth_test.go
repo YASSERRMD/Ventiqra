@@ -15,6 +15,7 @@ import (
 	"github.com/YASSERRMD/Ventiqra/backend/internal/auth"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/config"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/db"
+	"github.com/YASSERRMD/Ventiqra/backend/internal/realtime"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/repository"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/testutil"
 )
@@ -68,6 +69,7 @@ func newAuthTestServer(t *testing.T) *Server {
 		WithSaveSlots(repository.NewSaveSlotRepo(base)),
 		WithTimeline(repository.NewTimelineRepo(base)),
 		WithSnapshots(repository.NewMetricSnapshotRepo(base)),
+		WithHub(realtime.NewHub()),
 	)
 }
 

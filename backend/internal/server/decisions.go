@@ -270,7 +270,10 @@ func (s *Server) maybeOfferDecision(ctx context.Context, companyID string, seed 
 	}
 	if _, err := s.decisions.Offer(ctx, companyID, d.ID, d.Title, d.Description, day); err != nil {
 		s.log.Error("offer decision failed", "error", err)
+		return
 	}
+	// Notify live dashboards that a new decision card is available.
+	s.broadcastEvent(companyID, "decision", d.Title)
 }
 
 // companyIDHashSeed returns a stable non-zero seed from a company id.
