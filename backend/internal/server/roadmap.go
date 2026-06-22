@@ -173,6 +173,8 @@ func (s *Server) handleDevelopFeature(w http.ResponseWriter, r *http.Request) {
 		if err := s.features.UpdateProgress(r.Context(), id, newProgress, status, shippedDay); err == nil {
 				s.recordTimeline(r.Context(), companyID, "milestone", "Shipped feature: "+f.Name,
 					"Value points: "+formatInt(rf.ValuePoints), day)
+				// Shipping adds technical debt.
+				s.accumulateDebtOnShip(r.Context(), companyID)
 		}
 	} else {
 		_ = s.features.UpdateProgress(r.Context(), id, newProgress, status, nil)
