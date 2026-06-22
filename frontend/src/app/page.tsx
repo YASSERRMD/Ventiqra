@@ -1,5 +1,6 @@
 import { PageHeader } from "@/components/layout/page-header";
 import { BackendStatus } from "@/components/dashboard/backend-status";
+import { LiveBadge } from "@/components/dashboard/live-badge";
 import { MetricsCards } from "@/components/dashboard/metrics-cards";
 import { CompetitorPanel } from "@/components/dashboard/competitor-panel";
 import { MarketPanel } from "@/components/dashboard/market-panel";
@@ -16,7 +17,12 @@ export default function DashboardPage() {
       <PageHeader
         title="Dashboard"
         subtitle="Your company at a glance. Metrics come online as you build."
-        action={<BackendStatus />}
+        action={
+          <div className="flex items-center gap-3">
+            <LiveBadge />
+            <BackendStatus />
+          </div>
+        }
       />
 
       <MetricsCards />
