@@ -409,3 +409,10 @@ export type RoadmapFeature = {
   shipped_day: number | null;
   product_id: string | null;
 };
+
+export type TechDebt = {
+  debt: number;
+  quality: number;
+  outage_risk: number;
+  refactors: number;
+};
