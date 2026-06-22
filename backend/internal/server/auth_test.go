@@ -74,6 +74,7 @@ func newAuthTestServer(t *testing.T) *Server {
 		WithFeatures(repository.NewFeatureRepo(base)),
 		WithTechDebt(repository.NewTechDebtRepo(base)),
 		WithInfrastructure(repository.NewInfrastructureRepo(base)),
+		WithSupport(repository.NewSupportRepo(base)),
 	)
 }
 
