@@ -391,3 +391,8 @@ export type Analytics = {
   burn: AnalyticsPoint[];
   valuation: AnalyticsPoint[];
 };
+
+export type SimControl = {
+  mode: "paused" | "auto";
+  speed: 1 | 5 | 30;
+};
