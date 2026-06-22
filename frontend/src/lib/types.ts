@@ -426,3 +426,10 @@ export type Infrastructure = {
   outage_risk: number;
   scale_up_cost_cents: number;
 };
+
+export type SupportState = {
+  open_tickets: number;
+  resolved_total: number;
+  support_agents: number;
+  satisfaction_penalty: number;
+};
