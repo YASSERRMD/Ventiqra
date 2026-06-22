@@ -70,6 +70,7 @@ func newAuthTestServer(t *testing.T) *Server {
 		WithTimeline(repository.NewTimelineRepo(base)),
 		WithSnapshots(repository.NewMetricSnapshotRepo(base)),
 		WithHub(realtime.NewHub()),
+		WithSimControl(repository.NewSimControlRepo(base)),
 	)
 }
 
