@@ -48,6 +48,7 @@ type Server struct {
 	snapshots   *repository.MetricSnapshotRepo
 	hub         *realtime.Hub
 	simControl  *repository.SimControlRepo
+	features    *repository.FeatureRepo
 }
 
 // HealthChecker is anything that can report its own health via Ping.
@@ -180,6 +181,11 @@ func WithHub(hub *realtime.Hub) Option {
 // WithSimControl enables simulation speed control by providing a SimControlRepo.
 func WithSimControl(repo *repository.SimControlRepo) Option {
 	return func(s *Server) { s.simControl = repo }
+}
+
+// WithFeatures enables the product roadmap by providing a FeatureRepo.
+func WithFeatures(repo *repository.FeatureRepo) Option {
+	return func(s *Server) { s.features = repo }
 }
 
 // New constructs a Server with routes registered.
@@ -356,6 +362,13 @@ func (s *Server) registerRoutes() {
 		s.mux.Handle("POST /api/v1/companies/me/sim/pause", s.protected(http.HandlerFunc(s.handlePauseSim)))
 		s.mux.Handle("POST /api/v1/companies/me/sim/resume", s.protected(http.HandlerFunc(s.handleResumeSim)))
 		s.mux.Handle("POST /api/v1/companies/me/sim/speed", s.protected(http.HandlerFunc(s.handleSetSimSpeed)))
+	}
+
+	if s.tokens != nil && s.companies != nil && s.features != nil {
+		s.mux.Handle("GET /api/v1/companies/me/features", s.protected(http.HandlerFunc(s.handleListFeatures)))
+		s.mux.Handle("POST /api/v1/companies/me/features", s.protected(http.HandlerFunc(s.handleCreateFeature)))
+		s.mux.Handle("DELETE /api/v1/companies/me/features/{id}", s.protected(http.HandlerFunc(s.handleDeleteFeature)))
+		s.mux.Handle("POST /api/v1/companies/me/features/{id}/develop", s.protected(http.HandlerFunc(s.handleDevelopFeature)))
 	}
 }
 
