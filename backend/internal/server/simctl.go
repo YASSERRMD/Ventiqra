@@ -5,7 +5,6 @@ package server
 
 import (
 	"context"
-	"errors"
 	"net/http"
 
 	"github.com/YASSERRMD/Ventiqra/backend/internal/repository"
@@ -54,11 +53,11 @@ func (s *Server) handlePauseSim(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	if _, err := s.simControl.GetOrCreate(r.Context(), companyID); err != nil {
+		writeError(w, http.StatusInternalServerError, "could not pause")
+		return
+	}
 	if err := s.simControl.SetMode(r.Context(), companyID, string(simctl.ModePaused)); err != nil {
-		if errors.Is(err, repository.ErrNotFound) {
-			writeError(w, http.StatusNotFound, "company not found")
-			return
-		}
 		writeError(w, http.StatusInternalServerError, "could not pause")
 		return
 	}
@@ -105,11 +104,11 @@ func (s *Server) handleSetSimSpeed(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	if _, err := s.simControl.GetOrCreate(r.Context(), companyID); err != nil {
+		writeError(w, http.StatusInternalServerError, "could not set speed")
+		return
+	}
 	if err := s.simControl.SetSpeed(r.Context(), companyID, *req.Speed); err != nil {
-		if errors.Is(err, repository.ErrNotFound) {
-			writeError(w, http.StatusNotFound, "company not found")
-			return
-		}
 		writeError(w, http.StatusInternalServerError, "could not set speed")
 		return
 	}
