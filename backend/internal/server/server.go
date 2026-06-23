@@ -55,6 +55,7 @@ type Server struct {
 	deals       *repository.DealRepo
 	contracts   *repository.ContractRepo
 	achievements *repository.AchievementRepo
+	leaderboard *repository.LeaderboardRepo
 }
 
 // HealthChecker is anything that can report its own health via Ping.
@@ -222,6 +223,11 @@ func WithContracts(repo *repository.ContractRepo) Option {
 // WithAchievements enables the achievement engine.
 func WithAchievements(repo *repository.AchievementRepo) Option {
 	return func(s *Server) { s.achievements = repo }
+}
+
+// WithLeaderboard enables the local leaderboard.
+func WithLeaderboard(repo *repository.LeaderboardRepo) Option {
+	return func(s *Server) { s.leaderboard = repo }
 }
 
 // New constructs a Server with routes registered.
@@ -434,6 +440,10 @@ func (s *Server) registerRoutes() {
 
 	if s.tokens != nil && s.companies != nil && s.achievements != nil {
 		s.mux.Handle("GET /api/v1/companies/me/achievements", s.protected(http.HandlerFunc(s.handleListAchievements)))
+	}
+
+	if s.tokens != nil && s.leaderboard != nil {
+		s.mux.Handle("GET /api/v1/leaderboard", s.protected(http.HandlerFunc(s.handleGetLeaderboard)))
 	}
 }
 

@@ -8,6 +8,7 @@ import (
 	"github.com/YASSERRMD/Ventiqra/backend/internal/customers"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/develop"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/finance"
+	"github.com/YASSERRMD/Ventiqra/backend/internal/leaderboard"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/marketing"
 	metricsModule "github.com/YASSERRMD/Ventiqra/backend/internal/metrics"
 	"github.com/YASSERRMD/Ventiqra/backend/internal/middleware"
@@ -162,6 +163,10 @@ func (s *Server) handleSimTick(w http.ResponseWriter, r *http.Request) {
 		if err := s.companies.UpdateStatus(r.Context(), company.ID, status); err != nil {
 			s.log.Error("sim tick: mark bankrupt failed", "error", err)
 		}
+		// Finalize the run on the local leaderboard.
+		bankruptCompany := company
+		bankruptCompany.Status = status
+		s.finalizeRun(r.Context(), bankruptCompany, leaderboard.OutcomeBankrupt)
 	}
 
 	runway := metricsModule.Compute(simState.Cash, simState.Revenue, simState.MonthlyBurn, 0, simState.Day).RunwayMonths
