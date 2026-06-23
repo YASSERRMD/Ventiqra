@@ -445,6 +445,11 @@ func (s *Server) registerRoutes() {
 	if s.tokens != nil && s.leaderboard != nil {
 		s.mux.Handle("GET /api/v1/leaderboard", s.protected(http.HandlerFunc(s.handleGetLeaderboard)))
 	}
+
+	if s.tokens != nil && s.companies != nil {
+		s.mux.Handle("GET /api/v1/companies/me/difficulty", s.protected(http.HandlerFunc(s.handleGetDifficulty)))
+		s.mux.Handle("POST /api/v1/companies/me/difficulty", s.protected(http.HandlerFunc(s.handleSetDifficulty)))
+	}
 }
 
 // protected wraps a handler with the JWT AuthRequired middleware.

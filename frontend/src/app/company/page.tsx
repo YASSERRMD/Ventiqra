@@ -8,6 +8,7 @@ import { getToken, clearToken } from "@/lib/auth";
 import { formatCents } from "@/lib/format";
 import type { Company, CompanyCreate } from "@/lib/types";
 import { PageHeader, Placeholder } from "@/components/layout/page-header";
+import { DifficultySelector } from "@/components/dashboard/difficulty-selector";
 
 type State =
   | { kind: "loading" }
@@ -114,6 +115,7 @@ function CompanyProfile({ company }: { company: Company }) {
         <Metric label="Status" value={company.status} />
         <Metric label="Founded" value={new Date(company.founded_at).toLocaleDateString()} />
       </div>
+      <DifficultySelector />
       {company.description ? (
         <p className="mt-6 max-w-2xl text-sm text-muted">{company.description}</p>
       ) : null}
