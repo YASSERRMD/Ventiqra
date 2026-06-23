@@ -53,6 +53,7 @@ type Server struct {
 	infrastructure *repository.InfrastructureRepo
 	support     *repository.SupportRepo
 	deals       *repository.DealRepo
+	contracts   *repository.ContractRepo
 }
 
 // HealthChecker is anything that can report its own health via Ping.
@@ -210,6 +211,11 @@ func WithSupport(repo *repository.SupportRepo) Option {
 // WithDeals enables the B2B sales pipeline.
 func WithDeals(repo *repository.DealRepo) Option {
 	return func(s *Server) { s.deals = repo }
+}
+
+// WithContracts enables enterprise recurring-revenue contracts.
+func WithContracts(repo *repository.ContractRepo) Option {
+	return func(s *Server) { s.contracts = repo }
 }
 
 // New constructs a Server with routes registered.
@@ -413,6 +419,11 @@ func (s *Server) registerRoutes() {
 		s.mux.Handle("GET /api/v1/companies/me/deals", s.protected(http.HandlerFunc(s.handleListDeals)))
 		s.mux.Handle("POST /api/v1/companies/me/deals", s.protected(http.HandlerFunc(s.handleCreateDeal)))
 		s.mux.Handle("POST /api/v1/companies/me/deals/{id}/advance", s.protected(http.HandlerFunc(s.handleAdvanceDeal)))
+	}
+
+	if s.tokens != nil && s.companies != nil && s.contracts != nil {
+		s.mux.Handle("GET /api/v1/companies/me/contracts", s.protected(http.HandlerFunc(s.handleListContracts)))
+		s.mux.Handle("POST /api/v1/companies/me/contracts", s.protected(http.HandlerFunc(s.handleSignContract)))
 	}
 }
 

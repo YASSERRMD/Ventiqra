@@ -139,6 +139,9 @@ func (s *Server) handleSimTick(w http.ResponseWriter, r *http.Request) {
 	// Advance the customer-support ticket backlog for the day.
 	s.advanceSupport(r.Context(), company.ID, totalCustomers)
 
+	// Accrue enterprise-contract revenue and roll renewals.
+	s.advanceContracts(r.Context(), company.ID, &simState.Cash)
+
 	// Broadcast the latest state to live dashboard subscribers.
 	s.broadcastTick(company.ID, simState.Day, simState.Cash, simState.Revenue, simState.MonthlyBurn, totalCustomers)
 
