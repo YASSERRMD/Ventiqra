@@ -7,6 +7,7 @@ export type Company = {
   founded_at: string;
   cash_cents: number;
   status: string;
+  difficulty: string;
   created_at: string;
   updated_at: string;
 };
