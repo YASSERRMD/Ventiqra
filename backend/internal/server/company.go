@@ -23,6 +23,7 @@ type companyResponse struct {
 	FoundedAt     time.Time `json:"founded_at"`
 	CashCents     int64     `json:"cash_cents"`
 	Status        string    `json:"status"`
+	Difficulty    string    `json:"difficulty"`
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at"`
 }
@@ -35,10 +36,14 @@ type createCompanyRequest struct {
 }
 
 func toCompanyResponse(c *repository.Company) companyResponse {
+	diff := c.Difficulty
+	if diff == "" {
+		diff = "normal"
+	}
 	return companyResponse{
 		ID: c.ID, Name: c.Name, Slug: c.Slug, Industry: c.Industry,
 		Description: c.Description, FoundedAt: c.FoundedAt, CashCents: c.Cash,
-		Status: string(c.Status), CreatedAt: c.CreatedAt, UpdatedAt: c.UpdatedAt,
+		Status: string(c.Status), Difficulty: diff, CreatedAt: c.CreatedAt, UpdatedAt: c.UpdatedAt,
 	}
 }
 

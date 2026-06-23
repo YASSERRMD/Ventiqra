@@ -31,6 +31,7 @@ type Company struct {
 	FoundedAt   time.Time
 	Cash        int64
 	Status      CompanyStatus
+	Difficulty  string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
@@ -84,7 +85,7 @@ func (r *CompanyRepo) CreateCompany(ctx context.Context, c *Company) (*Company, 
 
 // GetCompany returns a company by id or ErrNotFound.
 func (r *CompanyRepo) GetCompany(ctx context.Context, id string) (*Company, error) {
-	const q = `SELECT id, owner_id, name, slug, industry, description, founded_at, cash, status, created_at, updated_at
+	const q = `SELECT id, owner_id, name, slug, industry, description, founded_at, cash, status, difficulty, created_at, updated_at
 	           FROM companies WHERE id = $1`
 	c, err := scanCompany(r.pool.QueryRow(ctx, q, id))
 	if err != nil {
@@ -98,7 +99,7 @@ func (r *CompanyRepo) GetCompany(ctx context.Context, id string) (*Company, erro
 
 // GetLatestCompanyForOwner returns the owner's most recently created company.
 func (r *CompanyRepo) GetLatestCompanyForOwner(ctx context.Context, ownerID string) (*Company, error) {
-	const q = `SELECT id, owner_id, name, slug, industry, description, founded_at, cash, status, created_at, updated_at
+	const q = `SELECT id, owner_id, name, slug, industry, description, founded_at, cash, status, difficulty, created_at, updated_at
 	           FROM companies WHERE owner_id = $1 ORDER BY created_at DESC LIMIT 1`
 	c, err := scanCompany(r.pool.QueryRow(ctx, q, ownerID))
 	if err != nil {
@@ -172,6 +173,18 @@ func (r *CompanyRepo) UpdateProfile(ctx context.Context, id string, cash int64, 
 	return nil
 }
 
+// SetDifficulty updates the company's difficulty level.
+func (r *CompanyRepo) SetDifficulty(ctx context.Context, id, difficulty string) error {
+	tag, err := r.pool.Exec(ctx, `UPDATE companies SET difficulty = $2 WHERE id = $1`, id, difficulty)
+	if err != nil {
+		return fmt.Errorf("set difficulty: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
 type companyScanner interface {
 	Scan(dest ...any) error
 }
@@ -179,7 +192,7 @@ type companyScanner interface {
 func scanCompany(row companyScanner) (*Company, error) {
 	var c Company
 	err := row.Scan(&c.ID, &c.OwnerID, &c.Name, &c.Slug, &c.Industry, &c.Description,
-		&c.FoundedAt, &c.Cash, &c.Status, &c.CreatedAt, &c.UpdatedAt)
+		&c.FoundedAt, &c.Cash, &c.Status, &c.Difficulty, &c.CreatedAt, &c.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
