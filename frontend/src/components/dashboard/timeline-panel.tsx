@@ -5,6 +5,7 @@ import { api, ApiError } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { formatCents } from "@/lib/format";
 import type { Timeline } from "@/lib/types";
+import { EmptyState } from "@/components/dashboard/panel-states";
 
 const KIND_TONE: Record<string, string> = {
   milestone: "text-indigo-400",
@@ -32,7 +33,20 @@ export function TimelinePanel() {
       });
   }, []);
 
-  if (!tl || tl.entries.length === 0) return null;
+  if (!tl) return null;
+  if (tl.entries.length === 0) {
+    return (
+      <section className="mt-6 sm:mt-8">
+        <h3 className="text-base font-semibold text-foreground">Timeline</h3>
+        <div className="mt-3">
+          <EmptyState
+            title="No timeline events yet"
+            message="Milestones like founding, launches, and funding rounds will appear here as you play."
+          />
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="mt-8">
