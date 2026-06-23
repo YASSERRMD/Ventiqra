@@ -462,3 +462,13 @@ export type Achievement = {
   description: string;
   awarded_day: number;
 };
+
+export type LeaderboardEntry = {
+  id: string;
+  company_name: string;
+  score: number;
+  days_survived: number;
+  peak_valuation: number;
+  outcome: string;
+  created_at: string;
+};

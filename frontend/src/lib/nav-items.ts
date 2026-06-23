@@ -13,5 +13,6 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Employees", href: "/employees", description: "Hire and manage your team" },
   { label: "Finance", href: "/finance", description: "Cash, burn, runway, and funding" },
   { label: "Saves", href: "/saves", description: "Save and restore simulation runs" },
+  { label: "Leaderboard", href: "/leaderboard", description: "Local high scores" },
   { label: "Scenarios", href: "/scenarios", description: "Predefined and custom scenarios" },
 ];
