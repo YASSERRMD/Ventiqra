@@ -455,3 +455,10 @@ export type EnterpriseContract = {
   discount_pct: number;
   signed_day: number;
 };
+
+export type Achievement = {
+  key: string;
+  name: string;
+  description: string;
+  awarded_day: number;
+};
