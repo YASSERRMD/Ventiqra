@@ -15,6 +15,7 @@ import { InfrastructurePanel } from "@/components/dashboard/infrastructure-panel
 import { SupportPanel } from "@/components/dashboard/support-panel";
 import { SalesPanel } from "@/components/dashboard/sales-panel";
 import { ContractsPanel } from "@/components/dashboard/contracts-panel";
+import { AchievementsPanel } from "@/components/dashboard/achievements-panel";
 import { AnalyticsPanel } from "@/components/dashboard/analytics-panel";
 import { DecisionModal } from "@/components/dashboard/decision-modal";
 
@@ -46,6 +47,7 @@ export default function DashboardPage() {
       <SupportPanel />
       <SalesPanel />
       <ContractsPanel />
+      <AchievementsPanel />
       <AnalyticsPanel />
       <DecisionModal />
     </div>

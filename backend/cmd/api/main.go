@@ -95,6 +95,7 @@ func run() error {
 			server.WithSupport(repository.NewSupportRepo(baseRepo)),
 			server.WithDeals(repository.NewDealRepo(baseRepo)),
 			server.WithContracts(repository.NewContractRepo(baseRepo)),
+			server.WithAchievements(repository.NewAchievementRepo(baseRepo)),
 		)
 		log.Info("auth, company, simulation, product, employee, launch, customer, pricing, and finance services enabled")
 	}

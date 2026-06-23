@@ -142,6 +142,9 @@ func (s *Server) handleSimTick(w http.ResponseWriter, r *http.Request) {
 	// Accrue enterprise-contract revenue and roll renewals.
 	s.advanceContracts(r.Context(), company.ID, &simState.Cash)
 
+	// Evaluate and award achievements against the new state.
+	s.evaluateAchievements(r.Context(), company.ID, simState.Day)
+
 	// Broadcast the latest state to live dashboard subscribers.
 	s.broadcastTick(company.ID, simState.Day, simState.Cash, simState.Revenue, simState.MonthlyBurn, totalCustomers)
 
