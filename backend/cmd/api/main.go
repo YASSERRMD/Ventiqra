@@ -93,6 +93,7 @@ func run() error {
 			server.WithTechDebt(repository.NewTechDebtRepo(baseRepo)),
 			server.WithInfrastructure(repository.NewInfrastructureRepo(baseRepo)),
 			server.WithSupport(repository.NewSupportRepo(baseRepo)),
+			server.WithDeals(repository.NewDealRepo(baseRepo)),
 		)
 		log.Info("auth, company, simulation, product, employee, launch, customer, pricing, and finance services enabled")
 	}

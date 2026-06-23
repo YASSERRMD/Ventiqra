@@ -52,6 +52,7 @@ type Server struct {
 	techDebt    *repository.TechDebtRepo
 	infrastructure *repository.InfrastructureRepo
 	support     *repository.SupportRepo
+	deals       *repository.DealRepo
 }
 
 // HealthChecker is anything that can report its own health via Ping.
@@ -204,6 +205,11 @@ func WithInfrastructure(repo *repository.InfrastructureRepo) Option {
 // WithSupport enables the customer-support service.
 func WithSupport(repo *repository.SupportRepo) Option {
 	return func(s *Server) { s.support = repo }
+}
+
+// WithDeals enables the B2B sales pipeline.
+func WithDeals(repo *repository.DealRepo) Option {
+	return func(s *Server) { s.deals = repo }
 }
 
 // New constructs a Server with routes registered.
@@ -401,6 +407,12 @@ func (s *Server) registerRoutes() {
 
 	if s.tokens != nil && s.companies != nil && s.support != nil {
 		s.mux.Handle("GET /api/v1/companies/me/support", s.protected(http.HandlerFunc(s.handleGetSupport)))
+	}
+
+	if s.tokens != nil && s.companies != nil && s.deals != nil {
+		s.mux.Handle("GET /api/v1/companies/me/deals", s.protected(http.HandlerFunc(s.handleListDeals)))
+		s.mux.Handle("POST /api/v1/companies/me/deals", s.protected(http.HandlerFunc(s.handleCreateDeal)))
+		s.mux.Handle("POST /api/v1/companies/me/deals/{id}/advance", s.protected(http.HandlerFunc(s.handleAdvanceDeal)))
 	}
 }
 
