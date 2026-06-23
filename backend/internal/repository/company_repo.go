@@ -67,7 +67,7 @@ func (r *CompanyRepo) CreateCompany(ctx context.Context, c *Company) (*Company, 
 
 	const q = `INSERT INTO companies (owner_id, name, slug, industry, description, founded_at, cash, status)
 	           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-	           RETURNING id, owner_id, name, slug, industry, description, founded_at, cash, status, created_at, updated_at`
+	           RETURNING id, owner_id, name, slug, industry, description, founded_at, cash, status, difficulty, created_at, updated_at`
 
 	row := r.pool.QueryRow(ctx, q,
 		c.OwnerID, c.Name, c.Slug, c.Industry, c.Description, c.FoundedAt, c.Cash, c.Status)
