@@ -433,3 +433,14 @@ export type SupportState = {
   support_agents: number;
   satisfaction_penalty: number;
 };
+
+export type Deal = {
+  id: string;
+  name: string;
+  stage: "lead" | "qualified" | "proposal" | "negotiation" | "closed_won" | "closed_lost";
+  value_cents: number;
+  probability: number;
+  closed_won: boolean;
+  created_day: number;
+  closed_day: number | null;
+};
