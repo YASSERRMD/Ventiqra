@@ -444,3 +444,14 @@ export type Deal = {
   created_day: number;
   closed_day: number | null;
 };
+
+export type EnterpriseContract = {
+  id: string;
+  customer_name: string;
+  annual_value: number;
+  term_days: number;
+  remaining_days: number;
+  status: "active" | "renewed" | "churned";
+  discount_pct: number;
+  signed_day: number;
+};
