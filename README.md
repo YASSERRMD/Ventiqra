@@ -1,15 +1,20 @@
 <p align="center">
-  <h1 align="center">Ventiqra</h1>
-  <p align="center">An open-source startup simulation engine.</p>
+  <img src="docs/images/ventiqra-logo.png" width="140" alt="Ventiqra" />
 </p>
 
+<h1 align="center">Ventiqra</h1>
+
 <p align="center">
-  <a href="https://go.dev/"><img src="https://img.shields.io/badge/Go-1.25-00ADD8?style=flat-square&logo=go" alt="Go" /></a>
-  <a href="https://nextjs.org/"><img src="https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js" alt="Next.js" /></a>
-  <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/PostgreSQL-16-336791?style=flat-square&logo=postgresql" alt="PostgreSQL" /></a>
-  <a href="https://redis.io/"><img src="https://img.shields.io/badge/Redis-7-DC382D?style=flat-square&logo=redis" alt="Redis" /></a>
-  <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow?style=flat-square" alt="License: MIT" /></a>
-  <a href="./VERSION"><img src="https://img.shields.io/badge/version-1.0.0-blue?style=flat-square" alt="Version" /></a>
+  <strong>An open-source startup simulation engine.</strong><br/>
+  Deterministic. Data-driven. Transparent.</p>
+
+<p align="center">
+  <a href="https://go.dev/"><img src="https://img.shields.io/badge/Go-1.25-1B2A4A?style=flat-square&logo=go" alt="Go" /></a>
+  <a href="https://nextjs.org/"><img src="https://img.shields.io/badge/Next.js-16-1B2A4A?style=flat-square&logo=next.js" alt="Next.js" /></a>
+  <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/PostgreSQL-16-1B2A4A?style=flat-square&logo=postgresql" alt="PostgreSQL" /></a>
+  <a href="https://redis.io/"><img src="https://img.shields.io/badge/Redis-7-1B2A4A?style=flat-square&logo=redis" alt="Redis" /></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-C5A55A?style=flat-square" alt="License: MIT" /></a>
+  <a href="./VERSION"><img src="https://img.shields.io/badge/version-1.0.0-C5A55A?style=flat-square" alt="Version" /></a>
 </p>
 
 ---
@@ -177,23 +182,13 @@ Key variables (see `.env.example` for the complete list):
 ## Architecture
 
 Ventiqra follows a strict layered architecture. Each domain is split into four
-layers with a clear dependency direction:
+layers with a clear dependency direction — pure logic never depends on I/O,
+repositories never contain business rules, and handlers never touch the database
+directly.
 
-```
-┌─────────────────────────────────────────────────────┐
-│  Server handlers  (internal/server/)                │
-│  HTTP routing, validation, orchestration            │
-├─────────────────────────────────────────────────────┤
-│  Pure domain logic  (internal/<domain>/)            │
-│  Deterministic, no I/O, fully unit-tested           │
-├─────────────────────────────────────────────────────┤
-│  Repository  (internal/repository/)                 │
-│  SQL queries over a shared pgx connection pool      │
-├─────────────────────────────────────────────────────┤
-│  PostgreSQL  (migrations/)                          │
-│  Numbered, idempotent SQL migration files           │
-└─────────────────────────────────────────────────────┘
-```
+<p align="center">
+  <img src="docs/images/ventiqra-architecture.png" alt="Ventiqra layered architecture" />
+</p>
 
 The simulation tick (`POST /api/v1/companies/me/sim/tick`) advances one
 simulated day and runs the full cycle: finance → customers → events → decisions
@@ -324,4 +319,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide.
 
 This project is licensed under the [MIT License](./LICENSE).
 
-© Mohamed Yasser
+---
+
+<p align="center">
+  <sub>Built by <strong>Mohamed Yasser</strong> · Solutions Architect</sub>
+</p>
